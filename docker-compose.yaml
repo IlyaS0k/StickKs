@@ -1,0 +1,25 @@
+version: "3"
+services:
+  sticks-db:
+    image: sticks-postgres-img
+    container_name: sticks-db
+    environment:
+      POSTGRES_DB: "stickksdb"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+
+  sticks:
+    image: sticks-img
+    container_name: sticks
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes: 
+      - "${HOME}/.m2/repository:/root/.m2/repository"
+    environment:
+      spring.datasource.url: "jdbc:postgresql://sticks-db:5432/stickksdb"
+      APP_DIR: "/app"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - sticks-db
