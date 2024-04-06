@@ -7,6 +7,7 @@ services:
       POSTGRES_DB: "stickksdb"
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
+      PGDATA: "/var/lib/postgresql/data"
 
   sticks:
     image: sticks-img
@@ -17,9 +18,10 @@ services:
     volumes: 
       - "${HOME}/.m2/repository:/root/.m2/repository"
     environment:
-      spring.datasource.url: "jdbc:postgresql://sticks-db:5432/stickksdb"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://sticks-db:5432/stickksdb"
       APP_DIR: "/app"
     ports:
       - "8080:8080"
+      - "5005:5005"
     depends_on:
       - sticks-db
