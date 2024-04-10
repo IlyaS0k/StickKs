@@ -9,9 +9,8 @@ VOLUME /root/.m2/repository
 
 WORKDIR ${APP_DIR}
 
-
 VOLUME /root/.m2/repository
 
 COPY 	. .
 
-ENTRYPOINT	["mvn", "spring-boot:run"]
+ENTRYPOINT	["mvn","-Djava.library.path=${JAVA_LIBRARY_PATH}", "spring-boot:run"]
