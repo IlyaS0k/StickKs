@@ -26,6 +26,6 @@ VOLUME /root/.m2/repository
 
 COPY 	. .
 
-RUN /tdlib-install.sh
+RUN /$STICKS_DIR/tdlib-install.sh
 
 ENTRYPOINT	["mvn", "spring-boot:run"]
