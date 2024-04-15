@@ -1,7 +1,7 @@
 version: "3"
 services:
   sticks-db:
-    image: sticks-postgres-img
+    image: postgres:13.3
     container_name: sticks-db
     environment:
       POSTGRES_DB: "stickksdb"
@@ -10,17 +10,18 @@ services:
       PGDATA: "/var/lib/postgresql/data"
 
   sticks:
-    image: sticks-img
     container_name: sticks
+    image: sticks-img
     build:
       context: .
       dockerfile: Dockerfile
-    volumes: 
+      args:
+        APP_DIR: "app"
+    volumes:
       - "${HOME}/.m2/repository:/root/.m2/repository"
     environment:
       SPRING_DATASOURCE_URL: "jdbc:postgresql://sticks-db:5432/stickksdb"
-      APP_DIR: "/app"
-      JAVA_LIBRARY_PATH: "./td/tdlib/bin"
+      TDLIB_PATH: "/app/td/tdlib/bin/libtdjni.so"
     ports:
       - "8080:8080"
       - "5005:5005"
