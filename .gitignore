@@ -22,6 +22,7 @@ target/
 mvnw.cmd
 mvnw
 td
+.Dockerfile.swp
 
 ### NetBeans ###
 /nbproject/private/
