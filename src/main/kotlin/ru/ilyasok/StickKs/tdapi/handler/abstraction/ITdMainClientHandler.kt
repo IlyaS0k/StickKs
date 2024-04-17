@@ -5,5 +5,6 @@ import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 
 
 interface ITdMainClientHandler: Client.ResultHandler {
-    fun forClient(client: ITgClient)
+    val client: ITgClient
+    val authorizationHandler: ITdAuthorizationHandler
 }
