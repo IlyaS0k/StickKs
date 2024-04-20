@@ -1,3 +1,0 @@
-package ru.ilyasok.StickKs.repository.abstraction
-
-interface IWordStatRepository
