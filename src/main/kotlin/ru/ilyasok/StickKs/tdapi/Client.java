@@ -15,9 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class Client {
     static {
         try {
-            System.out.println("******.............LOADING TDLIB..........******");
             String pathToLib = System.getenv("TDLIB_PATH");
-            System.out.println("TDLIB_PATH: " + pathToLib);
             System.load(pathToLib);
         } catch (UnsatisfiedLinkError e) {
             e.printStackTrace();
