@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>StickKs Login</title>
+    <script th:src="@{/js/auth.js}" type="text/javascript"></script>
+</head>
+<body>
+<h1>Enter Phone Number</h1>
+<label for="phone">Phone Number:</label>
+<input type="text" id="phone" name="phone" th:value="${phone}" required>
+<button type="button" onclick="authByPhone(document.getElementById('phone').value)">Submit</button>
+</body>
+</html>
