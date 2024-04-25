@@ -22,8 +22,6 @@ ENV STICKS_DIR=$APP_DIR
 
 WORKDIR $STICKS_DIR
 
-VOLUME /root/.m2/repository
-
 COPY 	. .
 
 RUN /$STICKS_DIR/tdlib-install.sh
