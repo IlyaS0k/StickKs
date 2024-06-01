@@ -2,9 +2,10 @@ package ru.ilyasok.StickKs.tdapi.handler.abstraction
 
 import ru.ilyasok.StickKs.tdapi.Client
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
+import ru.ilyasok.StickKs.tdapi.utils.handlerprovider.abstraction.IHandlerByTdobjClass
 
 
-interface ITdMainClientHandler: Client.ResultHandler {
+interface ITdMainHandler: Client.ResultHandler {
     val client: ITgClient
-    val authorizationHandler: ITdAuthorizationHandler
+    val handlersByTdobj: IHandlerByTdobjClass
 }
