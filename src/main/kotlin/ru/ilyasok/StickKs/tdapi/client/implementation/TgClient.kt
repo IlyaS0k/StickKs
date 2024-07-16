@@ -1,21 +1,19 @@
 package ru.ilyasok.StickKs.tdapi.client.implementation
 
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.tdapi.Client
 import ru.ilyasok.StickKs.tdapi.TdApi
-import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.TgClientParams
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
+import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdAuthorizationHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdMainHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQueryHandler
-import ru.ilyasok.StickKs.tdapi.model.TdQueryHandlerResponse
+import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdUpdateMessageContentHandler
+import ru.ilyasok.StickKs.tdapi.model.response.TdQueryHandlerResponse
 
 /**
  * Kotlin adapter of native [Client]
@@ -23,9 +21,10 @@ import ru.ilyasok.StickKs.tdapi.model.TdQueryHandlerResponse
 
 @Component
 class TgClient @Autowired constructor(
-    override val authorizationState: TgClientAuthorizationState,
+    override val authorizationHandler: ITdAuthorizationHandler,
+    override val updateMessageContentHandler: ITdUpdateMessageContentHandler,
     override val mainHandler: ITdMainHandler,
-    override val tgClientParams: TgClientParams,
+    override val tgClientParams: TgClientParams
 ) : ITgClient {
 
     override val adapteeClient = createNativeClient(mainHandler)
@@ -38,7 +37,7 @@ class TgClient @Autowired constructor(
         query: TdApi.Function<*>,
         queryHandler: ITdQueryHandler<R, E>
     ): TdQueryHandlerResponse<R, E> = coroutineScope {
-        val channel = Channel<TdQueryHandlerResponse<R,E>>()
+        val channel = Channel<TdQueryHandlerResponse<R, E>>()
         adapteeClient.send(query) { tdobj ->
             launch {
                 if (tdobj is TdApi.Error) {
@@ -52,7 +51,7 @@ class TgClient @Autowired constructor(
     }
 
     override suspend fun sendWithCallback(
-        query: TdApi.Function<*>
+        query: TdApi.Function<*>,
     ): TdQueryHandlerResponse<TdApi.Object, TdApi.Error> {
         val defaultQueryHandler = object : ITdQueryHandler<TdApi.Object, TdApi.Error> {
             override fun onResult(obj: TdApi.Object): TdApi.Object {
@@ -64,6 +63,10 @@ class TgClient @Autowired constructor(
             }
         }
         return sendWithCallback(query, defaultQueryHandler)
+    }
+
+    override suspend fun getUpdateMessageContentEventAsync(messageId: Long): TdApi.UpdateMessageContent? {
+        return updateMessageContentHandler.getUpdateMessageContentByIdWithTimeout(messageId)
     }
 
 
