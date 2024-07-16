@@ -1,4 +1,4 @@
-package ru.ilyasok.StickKs.tdapi.model
+package ru.ilyasok.StickKs.tdapi.model.response
 
 sealed class TdQueryHandlerResponse<R, E> {
 
