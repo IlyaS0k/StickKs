@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.tdapi.Client
 import ru.ilyasok.StickKs.tdapi.TdApi
+import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.TgClientParams
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdAuthorizationHandler
@@ -28,6 +29,21 @@ class TgClient @Autowired constructor(
 ) : ITgClient {
 
     override val adapteeClient = createNativeClient(mainHandler)
+
+    override suspend fun getAuthorizationState() = sendWithCallback(
+        TdApi.GetAuthorizationState(),
+        object : ITdQueryHandler<TgClientAuthorizationState, TdApi.Error> {
+            override fun onResult(obj: TdApi.Object): TgClientAuthorizationState {
+                return if (obj is TdApi.AuthorizationState) {
+                    TgClientAuthorizationState.convertAuthorizationState(obj)
+                } else TgClientAuthorizationState.UNDEFINED
+            }
+
+            override fun onError(error: TdApi.Error): TdApi.Error {
+                return error
+            }
+        }
+    )
 
     override fun send(query: TdApi.Function<*>) {
         adapteeClient.send(query, mainHandler)
@@ -69,14 +85,12 @@ class TgClient @Autowired constructor(
         return updateMessageContentHandler.getUpdateMessageContentByIdWithTimeout(messageId)
     }
 
-
     private fun createNativeClient(resultHandler: ITdMainHandler): Client {
         val logVerbosityLevel = TdApi.SetLogVerbosityLevel(0)
         Client.execute(logVerbosityLevel)
         val client = Client.create(resultHandler, null, null)
         return client
     }
-
 
 }
 

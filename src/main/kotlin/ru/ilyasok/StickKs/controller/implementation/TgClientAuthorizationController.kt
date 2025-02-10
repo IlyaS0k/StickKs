@@ -3,14 +3,15 @@ package ru.ilyasok.StickKs.controller.implementation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseBody
 import ru.ilyasok.StickKs.controller.abstraction.ITgClientAuthorizationController
 import ru.ilyasok.StickKs.tdapi.TdApi
-import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationStateEnum
+import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
-import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQueryHandler
-import ru.ilyasok.StickKs.tdapi.model.response.ErrorTdQueryHandlerResponse
-import ru.ilyasok.StickKs.tdapi.model.response.SuccessTdQueryHandlerResponse
 
 
 @Controller
@@ -26,53 +27,46 @@ class TgClientAuthorizationController @Autowired constructor(val client: ITgClie
     @PostMapping("/submit-phone")
     @ResponseBody
     override suspend fun submitPhone(@RequestBody phoneNumber: String?): ResponseEntity<String> {
-        val setPhoneCallback = client.sendWithCallback(TdApi.SetAuthenticationPhoneNumber(phoneNumber, null))
-        return when (setPhoneCallback) {
-            is SuccessTdQueryHandlerResponse -> ResponseEntity.ok("The phone number has been set")
+        client.sendWithCallback(TdApi.SetAuthenticationPhoneNumber(phoneNumber, null)).handle {
+            onSuccess = {
+                ResponseEntity.ok("The phone number has been set")
+            }
+            onError = { err ->
+                ResponseEntity.status(err.code)
+                .body(err.message)
+            }
+        }?.let { return it }
 
-            is ErrorTdQueryHandlerResponse -> ResponseEntity.status(setPhoneCallback.error.code)
-                .body(setPhoneCallback.error.message)
-        }
+        return ResponseEntity.status(400).body("error")
     }
 
     @PostMapping("/submit-login-code")
     @ResponseBody
     override suspend fun submitLoginCode(@RequestBody loginCode: String?): ResponseEntity<String> {
-        val authStateCallback = client.sendWithCallback(
-            TdApi.GetAuthorizationState(),
-            object : ITdQueryHandler<TgClientAuthorizationStateEnum, TdApi.Error> {
-                override fun onResult(obj: TdApi.Object): TgClientAuthorizationStateEnum {
-                    if (obj is TdApi.AuthorizationStateReady) {
-                        return TgClientAuthorizationStateEnum.READY
-                    }
-                    return TgClientAuthorizationStateEnum.UNDEFINED
-                }
-
-                override fun onError(error: TdApi.Error): TdApi.Error {
-                    return error
-                }
+        client.getAuthorizationState().handle {
+            onSuccess = { res ->
+                if (res == TgClientAuthorizationState.READY) {
+                    ResponseEntity.ok("already authorized")
+                } else null
             }
-        )
+            onError = { err ->
+                ResponseEntity
+                    .status(err.code)
+                    .body(err.message)
+            }
+        }?.let { return it }
 
-        when (authStateCallback) {
-            is ErrorTdQueryHandlerResponse -> return ResponseEntity
-                .status(authStateCallback.error.code)
-                .body(authStateCallback.error.message)
+        client.sendWithCallback(TdApi.CheckAuthenticationCode(loginCode)).handle {
+            onSuccess = { res ->
+                ResponseEntity.ok("auth code received successfully")
+            }
+            onError = { err ->
+                ResponseEntity
+                    .status(err.code)
+                    .body(err.message)
+            }
+        }?.let { return it }
 
-            is SuccessTdQueryHandlerResponse ->
-                if (authStateCallback.result == TgClientAuthorizationStateEnum.READY)
-                    return ResponseEntity.ok("already authorized")
-        }
-
-        when (val checkAuthCodeCallback = client.sendWithCallback(TdApi.CheckAuthenticationCode(loginCode))) {
-            is SuccessTdQueryHandlerResponse -> if (checkAuthCodeCallback.result is TdApi.Ok)
-                return ResponseEntity.ok("auth code received successfully")
-
-            is ErrorTdQueryHandlerResponse -> return ResponseEntity
-                .status(checkAuthCodeCallback.error.code)
-                .body(checkAuthCodeCallback.error.message)
-        }
         return ResponseEntity.status(400).body("error")
     }
-
 }

@@ -12,12 +12,11 @@ sealed class TdQueryHandlerResponse<R, E> {
         }
     }
 
-    fun isSuccess(): Boolean {
-        return this is SuccessTdQueryHandlerResponse<R, E>
+    fun<T> handle(buildHandlers: TdQueryHandleResultBuilder<R, E, T>.() -> Unit): T? {
+        val handlers = TdQueryHandleResultBuilder<R, E, T>().apply(buildHandlers).build()
+        return when (this) {
+            is SuccessTdQueryHandlerResponse -> handlers.onSuccess(result)
+            is ErrorTdQueryHandlerResponse -> handlers.onError(error)
+        }
     }
-
-    fun isError(): Boolean {
-        return this is ErrorTdQueryHandlerResponse<R, E>
-    }
-
 }
