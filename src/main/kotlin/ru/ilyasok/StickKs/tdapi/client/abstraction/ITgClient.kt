@@ -8,7 +8,7 @@ import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdAuthorizationHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdMainHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQueryHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdUpdateMessageContentHandler
-import ru.ilyasok.StickKs.tdapi.model.response.TdQueryHandlerResponse
+import ru.ilyasok.StickKs.tdapi.model.response.TdQueryHandlerResult
 
 interface ITgClient {
     val adapteeClient: Client
@@ -19,15 +19,23 @@ interface ITgClient {
 
     fun send(query: TdApi.Function<*>)
 
-    suspend fun getAuthorizationState(): TdQueryHandlerResponse<TgClientAuthorizationState, TdApi.Error>
+    suspend fun getAuthorizationState(): TdQueryHandlerResult<TgClientAuthorizationState, TdApi.Error>
+
+    suspend fun getUser(userId: Long): TdQueryHandlerResult<TdApi.User?, TdApi.Error>
+
+    suspend fun getContacts(): TdQueryHandlerResult<TdApi.Users?, TdApi.Error>
+
+    suspend fun setPhoneNumber(phoneNumber: String): TdQueryHandlerResult<TdApi.Ok?, TdApi.Error>
+
+    suspend fun checkAuthenticationCode(code: String): TdQueryHandlerResult<TdApi.Ok?, TdApi.Error>
 
     suspend fun <R, E> sendWithCallback(
         query: TdApi.Function<*>, queryHandler: ITdQueryHandler<R, E>
-    ): TdQueryHandlerResponse<R, E>
+    ): TdQueryHandlerResult<R, E>
 
-    suspend fun sendWithCallback(
+    suspend fun <R : TdApi.Object> sendWithCallback(
         query: TdApi.Function<*>
-    ): TdQueryHandlerResponse<TdApi.Object, TdApi.Error>
+    ): TdQueryHandlerResult<R?, TdApi.Error>
 
     suspend fun getUpdateMessageContentEventAsync(messageId: Long): TdApi.UpdateMessageContent?
 }

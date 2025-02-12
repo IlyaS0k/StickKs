@@ -14,7 +14,7 @@ import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdAuthorizationHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdMainHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQueryHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdUpdateMessageContentHandler
-import ru.ilyasok.StickKs.tdapi.model.response.TdQueryHandlerResponse
+import ru.ilyasok.StickKs.tdapi.model.response.TdQueryHandlerResult
 
 /**
  * Kotlin adapter of native [Client]
@@ -45,6 +45,18 @@ class TgClient @Autowired constructor(
         }
     )
 
+    override suspend fun getUser(userId: Long): TdQueryHandlerResult<TdApi.User?, TdApi.Error> =
+        sendWithCallback(TdApi.GetUser(userId))
+
+    override suspend fun getContacts(): TdQueryHandlerResult<TdApi.Users?, TdApi.Error> =
+        sendWithCallback(TdApi.GetContacts())
+
+    override suspend fun setPhoneNumber(phoneNumber: String): TdQueryHandlerResult<TdApi.Ok?, TdApi.Error> =
+        sendWithCallback(TdApi.SetAuthenticationPhoneNumber(phoneNumber, null))
+
+    override suspend fun checkAuthenticationCode(code: String): TdQueryHandlerResult<TdApi.Ok?, TdApi.Error> =
+        sendWithCallback(TdApi.CheckAuthenticationCode(code))
+
     override fun send(query: TdApi.Function<*>) {
         adapteeClient.send(query, mainHandler)
     }
@@ -52,26 +64,26 @@ class TgClient @Autowired constructor(
     override suspend fun <R, E> sendWithCallback(
         query: TdApi.Function<*>,
         queryHandler: ITdQueryHandler<R, E>
-    ): TdQueryHandlerResponse<R, E> = coroutineScope {
-        val channel = Channel<TdQueryHandlerResponse<R, E>>()
+    ): TdQueryHandlerResult<R, E> = coroutineScope {
+        val channel = Channel<TdQueryHandlerResult<R, E>>()
         adapteeClient.send(query) { tdobj ->
             launch {
                 if (tdobj is TdApi.Error) {
-                    channel.send(TdQueryHandlerResponse.error(queryHandler.onError(tdobj)))
+                    channel.send(TdQueryHandlerResult.error(queryHandler.onError(tdobj)))
                 } else {
-                    channel.send(TdQueryHandlerResponse.success(queryHandler.onResult(tdobj)))
+                    channel.send(TdQueryHandlerResult.success(queryHandler.onResult(tdobj)))
                 }
             }
         }
         return@coroutineScope channel.receive()
     }
 
-    override suspend fun sendWithCallback(
+    override suspend fun <R: TdApi.Object> sendWithCallback(
         query: TdApi.Function<*>,
-    ): TdQueryHandlerResponse<TdApi.Object, TdApi.Error> {
-        val defaultQueryHandler = object : ITdQueryHandler<TdApi.Object, TdApi.Error> {
-            override fun onResult(obj: TdApi.Object): TdApi.Object {
-                return obj
+    ): TdQueryHandlerResult<R?, TdApi.Error> {
+        val defaultQueryHandler = object : ITdQueryHandler<R?, TdApi.Error> {
+            override fun onResult(obj: TdApi.Object): R? {
+                return obj as? R
             }
 
             override fun onError(error: TdApi.Error): TdApi.Error {

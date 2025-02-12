@@ -27,15 +27,17 @@ class TgClientAuthorizationController @Autowired constructor(val client: ITgClie
     @PostMapping("/submit-phone")
     @ResponseBody
     override suspend fun submitPhone(@RequestBody phoneNumber: String?): ResponseEntity<String> {
-        client.sendWithCallback(TdApi.SetAuthenticationPhoneNumber(phoneNumber, null)).handle {
-            onSuccess = {
-                ResponseEntity.ok("The phone number has been set")
-            }
-            onError = { err ->
-                ResponseEntity.status(err.code)
-                .body(err.message)
-            }
-        }?.let { return it }
+        phoneNumber?.let {
+            client.setPhoneNumber(phoneNumber).handle {
+                onSuccess = {
+                    ResponseEntity.ok("The phone number has been set")
+                }
+                onError = { err ->
+                    ResponseEntity.status(err.code)
+                        .body(err.message)
+                }
+            }?.let { return it }
+        }
 
         return ResponseEntity.status(400).body("error")
     }
@@ -56,16 +58,18 @@ class TgClientAuthorizationController @Autowired constructor(val client: ITgClie
             }
         }?.let { return it }
 
-        client.sendWithCallback(TdApi.CheckAuthenticationCode(loginCode)).handle {
-            onSuccess = { res ->
-                ResponseEntity.ok("auth code received successfully")
-            }
-            onError = { err ->
-                ResponseEntity
-                    .status(err.code)
-                    .body(err.message)
-            }
-        }?.let { return it }
+        loginCode?.let {
+            client.checkAuthenticationCode(loginCode).handle {
+                onSuccess = { res ->
+                    ResponseEntity.ok("auth code received successfully")
+                }
+                onError = { err ->
+                    ResponseEntity
+                        .status(err.code)
+                        .body(err.message)
+                }
+            }?.let { return it }
+        }
 
         return ResponseEntity.status(400).body("error")
     }
