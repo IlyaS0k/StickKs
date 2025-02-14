@@ -1,13 +1,14 @@
 version: "3"
 services:
   sticks-db:
-    image: postgres:13.3
+    image: mongo
     container_name: sticks-db
     environment:
-      POSTGRES_DB: "stickksdb"
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
-      PGDATA: "/var/lib/postgresql/data"
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "root"
+      MONGO_INITDB_DATABASE: "sticks"
+    ports:
+      - "27017:27017"
 
   sticks:
     container_name: sticks
@@ -20,7 +21,10 @@ services:
     volumes:
       - "${HOME}/.m2/repository:/root/.m2/repository"
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://sticks-db:5432/stickksdb"
+      MONGO_USER: "root"
+      MONGO_PASS: "root"
+      MONGO_DB: "sticks"
+      MONGO_PORT: "27017"
       TDLIB_PATH: "/app/td/tdlib/bin/libtdjni.so"
     ports:
       - "8080:8080"
