@@ -10,10 +10,8 @@ import ru.ilyasok.StickKs.tdapi.TdApi
 import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.TgClientParams
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
-import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdAuthorizationHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdMainHandler
-import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQueryHandler
-import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdUpdateMessageContentHandler
+import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQuery
 import ru.ilyasok.StickKs.tdapi.model.response.TdQueryHandlerResult
 
 /**
@@ -22,8 +20,6 @@ import ru.ilyasok.StickKs.tdapi.model.response.TdQueryHandlerResult
 
 @Component
 class TgClient @Autowired constructor(
-    override val authorizationHandler: ITdAuthorizationHandler,
-    override val updateMessageContentHandler: ITdUpdateMessageContentHandler,
     override val mainHandler: ITdMainHandler,
     override val tgClientParams: TgClientParams
 ) : ITgClient {
@@ -32,7 +28,7 @@ class TgClient @Autowired constructor(
 
     override suspend fun getAuthorizationState() = sendWithCallback(
         TdApi.GetAuthorizationState(),
-        object : ITdQueryHandler<TgClientAuthorizationState, TdApi.Error> {
+        object : ITdQuery<TgClientAuthorizationState, TdApi.Error> {
             override fun onResult(obj: TdApi.Object): TgClientAuthorizationState {
                 return if (obj is TdApi.AuthorizationState) {
                     TgClientAuthorizationState.convertAuthorizationState(obj)
@@ -63,7 +59,7 @@ class TgClient @Autowired constructor(
 
     override suspend fun <R, E> sendWithCallback(
         query: TdApi.Function<*>,
-        queryHandler: ITdQueryHandler<R, E>
+        queryHandler: ITdQuery<R, E>
     ): TdQueryHandlerResult<R, E> = coroutineScope {
         val channel = Channel<TdQueryHandlerResult<R, E>>()
         adapteeClient.send(query) { tdobj ->
@@ -81,7 +77,7 @@ class TgClient @Autowired constructor(
     override suspend fun <R: TdApi.Object> sendWithCallback(
         query: TdApi.Function<*>,
     ): TdQueryHandlerResult<R?, TdApi.Error> {
-        val defaultQueryHandler = object : ITdQueryHandler<R?, TdApi.Error> {
+        val defaultQueryHandler = object : ITdQuery<R?, TdApi.Error> {
             override fun onResult(obj: TdApi.Object): R? {
                 return obj as? R
             }
@@ -91,10 +87,6 @@ class TgClient @Autowired constructor(
             }
         }
         return sendWithCallback(query, defaultQueryHandler)
-    }
-
-    override suspend fun getUpdateMessageContentEventAsync(messageId: Long): TdApi.UpdateMessageContent? {
-        return updateMessageContentHandler.getUpdateMessageContentByIdWithTimeout(messageId)
     }
 
     private fun createNativeClient(resultHandler: ITdMainHandler): Client {

@@ -5,31 +5,32 @@ import ru.ilyasok.StickKs.tdapi.TdApi
 import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState.Companion.convertAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
-import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdAuthorizationHandler
+import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdHandler
+import ru.ilyasok.StickKs.tdapi.utils.TdEqRelation
+import ru.ilyasok.StickKs.tdapi.utils.TdEquals
 
 @Component
-class TdAuthorizationHandler: ITdAuthorizationHandler {
+class TdAuthorizationHandler : ITdHandler {
 
-    override fun handle(client: ITgClient, authState: TdApi.UpdateAuthorizationState) {
-        val newState = convertAuthorizationState(authState.authorizationState)
-        when (newState) {
-            TgClientAuthorizationState.UNDEFINED -> return
-            TgClientAuthorizationState.CLOSED -> return
-            TgClientAuthorizationState.WAIT_PHONE_NUMBER -> return
-            TgClientAuthorizationState.WAIT_TDLIB_PARAMETERS -> {
-                val setParamsRequest = TdApi.SetTdlibParameters()
-                setParamsRequest.databaseDirectory = client.tgClientParams.databaseDirectory
-                setParamsRequest.useMessageDatabase = client.tgClientParams.useMessageDatabase!!
-                setParamsRequest.useSecretChats = client.tgClientParams.useSecretChats!!
-                setParamsRequest.apiId = client.tgClientParams.apiId!!
-                setParamsRequest.apiHash = client.tgClientParams.apiHash
-                setParamsRequest.systemLanguageCode = client.tgClientParams.systemLanguageCode
-                setParamsRequest.deviceModel = client.tgClientParams.deviceModel
-                setParamsRequest.applicationVersion = client.tgClientParams.applicationVersion
-                client.send(setParamsRequest)
+    override fun handle(client: ITgClient, event: TdApi.Object) {
+        if (TdEqRelation.TD_EQUALS == TdEquals.check(event, TdApi.UpdateAuthorizationState::class.java)) {
+            val authState = event as TdApi.UpdateAuthorizationState
+            val newState = convertAuthorizationState(authState.authorizationState)
+            when (newState) {
+                TgClientAuthorizationState.WAIT_TDLIB_PARAMETERS -> {
+                    val setParamsRequest = TdApi.SetTdlibParameters()
+                    setParamsRequest.databaseDirectory = client.tgClientParams.databaseDirectory
+                    setParamsRequest.useMessageDatabase = client.tgClientParams.useMessageDatabase!!
+                    setParamsRequest.useSecretChats = client.tgClientParams.useSecretChats!!
+                    setParamsRequest.apiId = client.tgClientParams.apiId!!
+                    setParamsRequest.apiHash = client.tgClientParams.apiHash
+                    setParamsRequest.systemLanguageCode = client.tgClientParams.systemLanguageCode
+                    setParamsRequest.deviceModel = client.tgClientParams.deviceModel
+                    setParamsRequest.applicationVersion = client.tgClientParams.applicationVersion
+                    client.send(setParamsRequest)
+                }
+                else -> return
             }
-            TgClientAuthorizationState.WAIT_CODE -> return
-            TgClientAuthorizationState.READY -> return
         }
     }
 }
