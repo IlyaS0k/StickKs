@@ -1,7 +1,7 @@
 package ru.ilyasok.StickKs.dsl.implementation
 
-import ru.ilyasok.StickKs.dsl.implementation.context.Context
+import ru.ilyasok.StickKs.core.context.EventContext
 
 class ActionBlock(
-    var context: Context
+    var context: EventContext
 )
