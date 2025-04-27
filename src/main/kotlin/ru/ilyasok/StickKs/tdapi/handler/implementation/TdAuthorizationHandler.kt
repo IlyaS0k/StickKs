@@ -1,18 +1,24 @@
 package ru.ilyasok.StickKs.tdapi.handler.implementation
 
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.tdapi.TdApi
-import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState.Companion.convertAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
+import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState.Companion.convertAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdHandler
 import ru.ilyasok.StickKs.tdapi.utils.TdEqRelation
 import ru.ilyasok.StickKs.tdapi.utils.TdEquals
 
 @Component
-class TdAuthorizationHandler : ITdHandler {
+class TdAuthorizationHandler(
+    @Lazy
+    private val client: ITgClient
+): ITdHandler
+{
 
-    override fun handle(client: ITgClient, event: TdApi.Object) {
+
+    override suspend fun handle(event: TdApi.Object) {
         if (TdEqRelation.TD_EQUALS == TdEquals.check(event, TdApi.UpdateAuthorizationState::class.java)) {
             val authState = event as TdApi.UpdateAuthorizationState
             val newState = convertAuthorizationState(authState.authorizationState)

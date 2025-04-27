@@ -4,6 +4,4 @@ import ru.ilyasok.StickKs.tdapi.Client
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 
 
-interface ITdMainHandler: Client.ResultHandler {
-    val client: ITgClient
-}
+interface ITdMainHandler: Client.ResultHandler

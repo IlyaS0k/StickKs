@@ -1,28 +1,24 @@
 package ru.ilyasok.StickKs.tdapi.handler.implementation;
 
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.Lazy
+import kotlinx.coroutines.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.tdapi.TdApi
-import ru.ilyasok.StickKs.tdapi.TdApi.UpdateAuthorizationState
-import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdMainHandler
-import ru.ilyasok.StickKs.tdapi.utils.TdEqRelation
-import ru.ilyasok.StickKs.tdapi.utils.TdEquals
 
 @Component
 class TdMainHandler(
     private val handlers: List<ITdHandler>,
-): ITdMainHandler {
+) : ITdMainHandler {
 
-    @Lazy
-    @Autowired
-    override lateinit var client: ITgClient
-
-    override fun onResult(obj: TdApi.Object) {
-        for (handler in handlers) {
-           handler.handle(client, obj)
+    override fun onResult(obj: TdApi.Object): Unit = runBlocking {
+        val h = handlers.first {it is TdFeatureHandler}.let { (it as TdFeatureHandler).publishEvent(null)  }
+        CoroutineScope(Dispatchers.IO).launch {
+         for (handler in handlers) {
+                handler.handle(obj)
+            }
         }
     }
 
