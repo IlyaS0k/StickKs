@@ -8,15 +8,14 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
-import ru.ilyasok.StickKs.controller.abstraction.ITgClientAuthorizationController
-import ru.ilyasok.StickKs.tdapi.TdApi
+import ru.ilyasok.StickKs.controller.abstraction.IAuthorizationController
 import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 
 
 @Controller
 @RequestMapping("/auth")
-class TgClientAuthorizationController @Autowired constructor(val client: ITgClient) : ITgClientAuthorizationController {
+class AuthorizationController @Autowired constructor(val client: ITgClient) : IAuthorizationController {
 
 
     @GetMapping("/by-phone")
