@@ -31,10 +31,4 @@ class TestController(
 
         return users[0].toString()
     }
-
-    @GetMapping("/mongo")
-    suspend fun testMongo(): User? {
-        return userRepository.save(User(UUID.randomUUID(), "Michael Jackson"))
-    }
-
 }
