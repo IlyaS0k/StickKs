@@ -3,10 +3,7 @@ function authByPhone(phone) {
     let auth = sendPhone(phone)
         .then((phoneResult) => prompt('Enter login code', ''))
         .then((enteredLoginCode) => sendLoginCode(enteredLoginCode))
-        .then((sendLoginCodeResult) => {
-            console.log("end:" + sendLoginCodeResult.text())
-        })
-
+        .catch((error) => { alert("Authorization error: " + error.message) });
 }
 
 function sendPhone(phone) {
