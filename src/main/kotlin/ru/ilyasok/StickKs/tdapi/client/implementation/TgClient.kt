@@ -41,16 +41,16 @@ class TgClient @Autowired constructor(
         }
     )
 
-    override suspend fun getUser(userId: Long): TdQueryHandlerResult<TdApi.User?, TdApi.Error> =
+    override suspend fun getUser(userId: Long): TdQueryResult<TdApi.User?, TdApi.Error> =
         sendWithCallback(TdApi.GetUser(userId))
 
-    override suspend fun getContacts(): TdQueryHandlerResult<TdApi.Users?, TdApi.Error> =
+    override suspend fun getContacts(): TdQueryResult<TdApi.Users?, TdApi.Error> =
         sendWithCallback(TdApi.GetContacts())
 
-    override suspend fun setPhoneNumber(phoneNumber: String): TdQueryHandlerResult<TdApi.Ok?, TdApi.Error> =
+    override suspend fun setPhoneNumber(phoneNumber: String): TdQueryResult<TdApi.Ok?, TdApi.Error> =
         sendWithCallback(TdApi.SetAuthenticationPhoneNumber(phoneNumber, null))
 
-    override suspend fun checkAuthenticationCode(code: String): TdQueryHandlerResult<TdApi.Ok?, TdApi.Error> =
+    override suspend fun checkAuthenticationCode(code: String): TdQueryResult<TdApi.Ok?, TdApi.Error> =
         sendWithCallback(TdApi.CheckAuthenticationCode(code))
 
     override fun send(query: TdApi.Function<*>) {
@@ -60,14 +60,14 @@ class TgClient @Autowired constructor(
     override suspend fun <R, E> sendWithCallback(
         query: TdApi.Function<*>,
         queryHandler: ITdQuery<R, E>
-    ): TdQueryHandlerResult<R, E> = coroutineScope {
-        val channel = Channel<TdQueryHandlerResult<R, E>>()
+    ): TdQueryResult<R, E> = coroutineScope {
+        val channel = Channel<TdQueryResult<R, E>>()
         adapteeClient.send(query) { tdobj ->
             launch {
                 if (tdobj is TdApi.Error) {
-                    channel.send(TdQueryHandlerResult.error(queryHandler.onError(tdobj)))
+                    channel.send(TdQueryResult.error(queryHandler.onError(tdobj)))
                 } else {
-                    channel.send(TdQueryHandlerResult.success(queryHandler.onResult(tdobj)))
+                    channel.send(TdQueryResult.success(queryHandler.onResult(tdobj)))
                 }
             }
         }
@@ -76,7 +76,7 @@ class TgClient @Autowired constructor(
 
     override suspend fun <R: TdApi.Object> sendWithCallback(
         query: TdApi.Function<*>,
-    ): TdQueryHandlerResult<R?, TdApi.Error> {
+    ): TdQueryResult<R?, TdApi.Error> {
         val defaultQueryHandler = object : ITdQuery<R?, TdApi.Error> {
             override fun onResult(obj: TdApi.Object): R? {
                 return obj as? R
