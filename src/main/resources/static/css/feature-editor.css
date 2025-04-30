@@ -101,3 +101,8 @@ textarea {
     resize: none;
     box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
 }
+#editor-container {
+    width: 100%;
+    height: 500px;
+    border: 1px solid #ddd;
+}

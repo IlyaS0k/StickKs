@@ -1,3 +1,24 @@
+require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+require(['vs/editor/editor.main'], function () {
+    let monacoEditor = monaco.editor.create(document.getElementById('editor-container'), {
+        value: "",
+        language: 'kotlin',
+        theme: 'vs-light',
+        automaticLayout: true,
+        minimap: {enabled: true},
+        fontSize: 14,
+        scrollBeyondLastLine: false
+    });
+})
+
+let context = {
+    userId: String
+}
+function initialization() {
+    context.userId =
+    renderFeatures()
+}
+
 function renderFeatures() {
     const list = document.getElementById('featuresList');
     const filter = document.getElementById('filterInput').value.toLowerCase();
@@ -15,11 +36,11 @@ function renderFeatures() {
 }
 
 function loadFeature(code) {
-    document.getElementById('codeEditor').value = code;
+    monacoEditor.setValue(code);
 }
 
 function saveFeature() {
-    const code = document.getElementById('codeEditor').value.trim();
+    const code = monacoEditor.getValue().trim();
     if (!code) {
         alert("Code is empty!");
         return;
@@ -32,7 +53,7 @@ function saveFeature() {
     if (existing) {
         existing.code = code;
     } else {
-        features.push({ name: featureName, code: code });
+        features.push({name: featureName, code: code});
     }
 
     renderFeatures();
@@ -40,11 +61,11 @@ function saveFeature() {
 }
 
 function clearEditor() {
-    document.getElementById('codeEditor').value = '';
+    monacoEditor.setValue("");
 }
 
 function createNewFeature() {
-    document.getElementById('codeEditor').value = 'fun newFea() {\n    // TODO: Implement\n}';
+    monacoEditor.setValue("fun newFea() {\\n    // TODO: Implement\\n};")
 }
 
-window.onload = renderFeatures;
+window.onload = initialization;

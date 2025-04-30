@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Kotlin DSL Editor</title>
+    <title>Feature Editor</title>
     <link rel="stylesheet" th:href="@{/css/feature-editor.css}">
 </head>
 <body>
@@ -10,10 +10,9 @@
 <div class="container">
     <div class="features-panel">
         <h2>Features</h2>
-        <input type="text" id="filterInput" class="filter-input" placeholder="Filter by name..." oninput="renderfeatures()">
+        <input type="text" id="filterInput" class="filter-input" placeholder="Filter by name..." oninput="renderFeatures()">
         <button class="new-feature-button" onclick="createNewFeature()">+ New Feature</button>
-        <div class="features-list" id="featuresList">
-        </div>
+        <div class="features-list" id="featuresList"></div>
     </div>
 
     <div class="editor">
@@ -21,7 +20,7 @@
             <button onclick="saveFeature()">Save</button>
             <button onclick="clearEditor()">Clear</button>
         </div>
-        <textarea id="codeEditor" placeholder="Write new feature code here..."></textarea>
+        <div id="editor-container"></div>
     </div>
 </div>
 <script th:inline="javascript">
@@ -29,6 +28,7 @@
     const features = /*[[${features}]]*/ [];
     /*]]>*/
 </script>
-<script th:src="@{/js/feature-editor.js}" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+<script th:src="@{/js/feature-editor.js}"></script>
 </body>
 </html>

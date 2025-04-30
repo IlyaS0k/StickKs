@@ -18,9 +18,9 @@ import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 class AuthorizationController @Autowired constructor(val client: ITgClient) : IAuthorizationController {
 
 
-    @GetMapping("/by-phone")
+    @GetMapping
     override suspend fun authByPhone(): String {
-        return "authorization-by-phone"
+        return "auth"
     }
 
     @PostMapping("/submit-phone")
