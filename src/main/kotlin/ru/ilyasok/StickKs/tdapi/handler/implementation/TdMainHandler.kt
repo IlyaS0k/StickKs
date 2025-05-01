@@ -14,7 +14,6 @@ class TdMainHandler(
 ) : ITdMainHandler {
 
     override fun onResult(obj: TdApi.Object): Unit = runBlocking {
-        val h = handlers.first {it is TdFeatureHandler}.let { (it as TdFeatureHandler).publishEvent(null)  }
         CoroutineScope(Dispatchers.IO).launch {
          for (handler in handlers) {
                 handler.handle(obj)
