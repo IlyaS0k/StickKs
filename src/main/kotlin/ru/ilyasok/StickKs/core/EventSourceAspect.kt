@@ -4,8 +4,8 @@ import org.aspectj.lang.annotation.AfterReturning
 import org.aspectj.lang.annotation.Aspect
 import org.aspectj.lang.annotation.Pointcut
 import org.springframework.stereotype.Component
-import ru.ilyasok.StickKs.core.event.Event
-import ru.ilyasok.StickKs.tdapi.feature.event.TgReceiveTextMessageEvent
+import ru.ilyasok.StickKs.core.context.EventContext
+import ru.ilyasok.StickKs.tdapi.feature.context.TgNewTextMessageContext
 
 @Aspect
 @Component
@@ -16,9 +16,9 @@ class EventSourceAspect {
     }
 
     @AfterReturning(value = "publishEventPointcut()", returning = "event")
-    fun afterReturningPublishEventAdvice(event: Event?) {
+    fun afterReturningPublishEventAdvice(event: EventContext?) {
         if (event != null) {
-            println("event message: ${(event as TgReceiveTextMessageEvent).context.message} ")
+            println("event message: ${(event as TgNewTextMessageContext).message} ")
         }
     }
 }
