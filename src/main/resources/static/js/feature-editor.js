@@ -11,11 +11,7 @@ require(['vs/editor/editor.main'], function () {
     });
 })
 
-let context = {
-    userId: String
-}
 function initialization() {
-    context.userId =
     renderFeatures()
 }
 
