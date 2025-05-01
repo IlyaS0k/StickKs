@@ -1,4 +1,4 @@
-package ru.ilyasok.StickKs.dsl.implementation
+package ru.ilyasok.StickKs.dsl
 
 import kotlin.time.Duration
 
