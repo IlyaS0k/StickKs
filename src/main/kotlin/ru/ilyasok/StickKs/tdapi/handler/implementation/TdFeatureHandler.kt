@@ -11,11 +11,11 @@ import ru.ilyasok.StickKs.core.context.EventContext
 import ru.ilyasok.StickKs.core.event.source.IEventSource
 import ru.ilyasok.StickKs.tdapi.TdApi
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
-import ru.ilyasok.StickKs.tdapi.feature.context.TgNewTextMessageContext
+import ru.ilyasok.StickKs.tdapi.feature.TgNewTextMessageContext
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdHandler
 
 @Component
-class TdFeatureHandler(@Lazy private val client: ITgClient) : ITdHandler, IEventSource {
+open class TdFeatureHandler(@Lazy private val client: ITgClient) : ITdHandler, IEventSource {
 
     @Autowired
     @Lazy
@@ -36,15 +36,18 @@ class TdFeatureHandler(@Lazy private val client: ITgClient) : ITdHandler, IEvent
     private suspend fun buildEvent(args: Any?): EventContext? = when (args) {
         is TdApi.UpdateNewMessage -> {
             val tgEvent = args
-            if (tgEvent.message.content is TdApi.MessageText) {
+            val msg = tgEvent.message
+            if (msg.content is TdApi.MessageText && msg.senderId is TdApi.MessageSenderUser) {
+                val sender = msg.senderId as TdApi.MessageSenderUser
                 val content = tgEvent.message.content as TdApi.MessageText
                 TgNewTextMessageContext(
-                    message = content.text.text,
-                    user = client.getUser(tgEvent.message.chatId).handle { onSuccess = { it } }
+                    messageText = content.text.text,
+                    sender = client.getUser(sender.userId).handle<TdApi.User> {
+                        onSuccess = { it }
+                    } ?: TdApi.User()
                 )
             } else null
         }
-
         else -> null
     }
 }

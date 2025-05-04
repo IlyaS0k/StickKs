@@ -7,7 +7,7 @@ import ru.ilyasok.StickKs.dsl.DSLDependenciesProvider
 
 @SpringBootApplication
 @EnableAspectJAutoProxy
-class StickKsApp
+open class StickKsApp
 
 fun main(args: Array<String>) {
     DSLDependenciesProvider.findDependencies()
