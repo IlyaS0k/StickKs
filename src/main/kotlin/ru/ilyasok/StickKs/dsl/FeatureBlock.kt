@@ -1,18 +1,22 @@
 package ru.ilyasok.StickKs.dsl
 
+import java.util.UUID
+
 class FeatureBlock(
-    val action: ActionBlock,
-    val condition: ConditionBlock,
+    val name: String,
+    val onEvent: OnEventBlock,
+    val configuration: ConfigurationBlock,
 )
 
 class FeatureBlockBuilder {
-    lateinit var action: ActionBlock
-    lateinit var condition: ConditionBlock
+    var name: String? = null
+    var configuration: ConfigurationBlock = AlwaysAvailableConfigurationBlock()
+    lateinit var onEvent: OnEventBlock
 
     fun build(): FeatureBlock {
-        require(::action.isInitialized) { "action block is not initialized" }
-        require(::condition.isInitialized) { "condition block is not initialized" }
-        return FeatureBlock(action = action, condition = condition)
+        require(::onEvent.isInitialized) { "onEvent block is not initialized" }
+        name = if (name.isNullOrBlank()) "Feature#${UUID.randomUUID()}" else name
+        return FeatureBlock(onEvent = onEvent, configuration = configuration, name = name!!)
     }
 }
 
