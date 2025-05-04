@@ -1,6 +1,30 @@
-require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+class FeaturesContext {
+    #currentFeature
+
+    constructor() {
+    }
+
+    get currentFeature() {
+        return this.#currentFeature
+    }
+
+    set currentFeature(newCurrentFeature) {
+        if (newCurrentFeature == null) {
+            monacoEditor.setValue("feature {\n\n}")
+        } else {
+            let featureCode = features.find(f => f.id === newCurrentFeature).code
+            monacoEditor.setValue(featureCode)
+        }
+        this.#currentFeature = newCurrentFeature
+    }
+}
+
+let monacoEditor;
+
+require.config({paths: {'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs'}});
+
 require(['vs/editor/editor.main'], function () {
-    let monacoEditor = monaco.editor.create(document.getElementById('editor-container'), {
+    monacoEditor = monaco.editor.create(document.getElementById('editor-container'), {
         value: "",
         language: 'kotlin',
         theme: 'vs-light',
@@ -11,7 +35,10 @@ require(['vs/editor/editor.main'], function () {
     });
 })
 
+let context = new FeaturesContext()
+
 function initialization() {
+    context.currentFeature = null
     renderFeatures()
 }
 
@@ -26,34 +53,53 @@ function renderFeatures() {
             const div = document.createElement('div');
             div.className = 'feature-item';
             div.innerText = `${f.name}`;
-            div.onclick = () => loadFeature(f.code);
+            div.onclick = () => loadFeature(f.id);
             list.appendChild(div);
         });
 }
 
-function loadFeature(code) {
-    monacoEditor.setValue(code);
+function loadFeature(id) {
+    context.currentFeature = id
 }
 
-function saveFeature() {
-    const code = monacoEditor.getValue().trim();
+async function saveFeature() {
+    let featureToSaveId = context.currentFeature
+    let isNewFeature = featureToSaveId == null
+    const code = monacoEditor.getValue()
     if (!code) {
-        alert("Code is empty!");
-        return;
+        alert("Code is empty!")
+        return
     }
+    try {
+        const response = await fetch('http://localhost:8080/features/save', {
+            method: "POST",
+            body: JSON.stringify({
+                id: featureToSaveId,
+                code: code
+            }),
+            headers: {
+                "Content-type": "application/json; charset=utf-8"
+            }
+        })
 
-    const match = code.match(/fun\s+(\w+)/);
-    const featureName = match ? match[1] : "Unnamed";
-
-    const existing = features.find(f => f.name === featureName);
-    if (existing) {
-        existing.code = code;
-    } else {
-        features.push({name: featureName, code: code});
+        if (!response.ok) {
+            const errorText = await response.text()
+            alert(`Ошибка: ${response.status} — ${errorText}`)
+        } else {
+            const feature = await response.json()
+            if (isNewFeature) {
+                features.push({id: feature.id, name: feature.name, code: feature.code})
+            } else {
+                const index = features.findIndex(f => f.id === featureToSaveId)
+                features[index].name = feature.name
+                features[index].code = feature.code
+            }
+            renderFeatures()
+            alert("Сохранено")
+        }
+    } catch (error) {
+        alert("Ошибка: " + error.message)
     }
-
-    renderFeatures();
-    alert("Feature saved!");
 }
 
 function clearEditor() {
@@ -61,7 +107,7 @@ function clearEditor() {
 }
 
 function createNewFeature() {
-    monacoEditor.setValue("fun newFea() {\\n    // TODO: Implement\\n};")
+    context.currentFeature = null
 }
 
 window.onload = initialization;

@@ -4,4 +4,6 @@ import org.springframework.data.mongodb.repository.MongoRepository
 import ru.ilyasok.StickKs.model.Feature
 import java.util.UUID
 
-interface IFeatureRepository : MongoRepository<Feature, UUID>
+interface IFeatureRepository : MongoRepository<Feature, UUID> {
+    fun getById(id: UUID): Feature?
+}
