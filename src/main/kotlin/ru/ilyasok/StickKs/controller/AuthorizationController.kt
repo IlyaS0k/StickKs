@@ -1,4 +1,4 @@
-package ru.ilyasok.StickKs.controller.implementation
+package ru.ilyasok.StickKs.controller
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
@@ -8,24 +8,23 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
-import ru.ilyasok.StickKs.controller.abstraction.IAuthorizationController
 import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 
 
 @Controller
 @RequestMapping("/auth")
-class AuthorizationController @Autowired constructor(val client: ITgClient) : IAuthorizationController {
+class AuthorizationController @Autowired constructor(val client: ITgClient) {
 
 
     @GetMapping
-    override suspend fun authByPhone(): String {
+    fun authByPhone(): String {
         return "auth"
     }
 
     @PostMapping("/submit-phone")
     @ResponseBody
-    override suspend fun submitPhone(@RequestBody phoneNumber: String?): ResponseEntity<String> {
+    suspend fun submitPhone(@RequestBody phoneNumber: String?): ResponseEntity<String> {
         phoneNumber?.let {
             client.setPhoneNumber(phoneNumber).handle {
                 onSuccess = {
@@ -43,7 +42,7 @@ class AuthorizationController @Autowired constructor(val client: ITgClient) : IA
 
     @PostMapping("/submit-login-code")
     @ResponseBody
-    override suspend fun submitLoginCode(@RequestBody loginCode: String?): ResponseEntity<String> {
+    suspend fun submitLoginCode(@RequestBody loginCode: String?): ResponseEntity<String> {
         client.getAuthorizationState().handle {
             onSuccess = { res ->
                 if (res == TgClientAuthorizationState.READY) {
