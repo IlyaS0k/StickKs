@@ -9,7 +9,11 @@ class DSLDependenciesProvider {
         private val DSL_FEATURE_ANNOTATION = FeatureDSL::class.java.name
 
         private val dependencies = mutableListOf<String>(
-            "kotlin.time.Duration.Companion.*"
+            "kotlin.time.Duration.Companion.milliseconds",
+            "kotlin.time.Duration.Companion.seconds",
+            "kotlin.time.Duration.Companion.minutes",
+            "kotlin.time.Duration.Companion.hours",
+            "kotlin.time.Duration.Companion.days",
         )
 
         fun findDependencies() {

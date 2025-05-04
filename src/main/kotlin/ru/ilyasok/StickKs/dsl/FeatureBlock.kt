@@ -16,6 +16,7 @@ class FeatureBlockBuilder {
     }
 }
 
+@FeatureDSL
 fun feature(block: FeatureBlockBuilder.() -> Unit): FeatureBlock {
     return FeatureBlockBuilder().apply(block).build()
 }
