@@ -1,9 +1,20 @@
-function authByPhone(phone) {
+async function authByPhone(phone) {
     console.log("authStart:" + phone)
-    let auth = sendPhone(phone)
-        .then((phoneResult) => prompt('Enter login code', ''))
-        .then((enteredLoginCode) => sendLoginCode(enteredLoginCode))
-        .catch((error) => { alert("Authorization error: " + error.message) });
+
+    try {
+        const phoneResponse = await sendPhone(phone)
+        if (!phoneResponse.ok) {
+            alert("Authorization error: " + await phoneResponse.text())
+            return
+        }
+        const enteredLoginCode = prompt('Enter login code', '')
+        const loginResponse = await sendLoginCode(enteredLoginCode)
+        if (!loginResponse.ok) {
+            alert("Authorization error: " + await loginResponse.text())
+        }
+    } catch (error) {
+        alert("Authorization error: " + error.message);
+    }
 }
 
 function sendPhone(phone) {
