@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Login</title>
+    <script th:src="@{/js/login.js}" type="text/javascript"></script>
+    <link rel="stylesheet" th:href="@{/css/login.css}">
+
+</head>
+<body>
+<form>
+    <h1>Enter phone number</h1>
+    <label for="phone">phone number:</label>
+    <input class="phone-input" type="text" id="phone" name="phone" th:value="${phone}" required>
+    <button type="button" onclick="loginByPhone(document.getElementById('phone').value)">Submit</button>
+</form>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>

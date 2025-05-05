@@ -84,7 +84,7 @@ async function saveFeature() {
 
         if (!response.ok) {
             const errorText = await response.text()
-            alert(`Ошибка: ${response.status} — ${errorText}`)
+            alert(`Error: ${response.status} — ${errorText}`)
         } else {
             const feature = await response.json()
             if (isNewFeature) {
@@ -95,15 +95,33 @@ async function saveFeature() {
                 features[index].code = feature.code
             }
             renderFeatures()
-            alert("Сохранено")
+            alert("Saved")
         }
     } catch (error) {
-        alert("Ошибка: " + error.message)
+        alert("Error: " + error.message)
     }
 }
 
-function clearEditor() {
-    monacoEditor.setValue("");
+async function logout() {
+    try {
+        if (confirm("Are you sure you want to log out?")) {
+            const logout = await fetch("http://localhost:8080/logout", {
+                method: "POST",
+                headers: {
+                    "Content-type": "application/json; charset=utf-8"
+                }
+            })
+
+            if (!logout.ok) {
+                alert("Logout error: " + await logout.text());
+                return
+            }
+
+            window.location.href = "/login"
+        }
+    } catch (error) {
+        alert("Logout error: " + error.message);
+    }
 }
 
 function createNewFeature() {

@@ -1,5 +1,6 @@
 package ru.ilyasok.StickKs.tdapi.handler.implementation
 
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.tdapi.TdApi
@@ -17,6 +18,9 @@ class TdAuthorizationHandler(
 ): ITdHandler
 {
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(TdAuthorizationHandler::class.java)
+    }
 
     override suspend fun handle(event: TdApi.Object) {
         if (TdEqRelation.TD_EQUALS == TdEquals.check(event, TdApi.UpdateAuthorizationState::class.java)) {
@@ -35,8 +39,12 @@ class TdAuthorizationHandler(
                     setParamsRequest.applicationVersion = client.tgClientParams.applicationVersion
                     client.send(setParamsRequest)
                 }
+                TgClientAuthorizationState.CLOSED -> {
+                    client.initializeClient()
+                }
                 else -> return
             }
+            logger.info("updated auth state: ${newState.name}")
         }
     }
 }

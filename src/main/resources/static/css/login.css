@@ -25,9 +25,9 @@ h1 {
 label {
     display: block;
     margin-bottom: 10px;
-    text-align: left; /* Adjust as needed */
+    text-align: left;
 }
-input[type="text"] {
+.phone-input {
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
@@ -44,4 +44,8 @@ button {
 }
 button:hover {
     background-color: #0056b3;
+}
+.login-swal-popup {
+    max-width: 90vw;
+    box-sizing: border-box;
 }
