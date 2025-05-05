@@ -16,7 +16,7 @@ class FeatureService(
         private val logger: Logger = LoggerFactory.getLogger(FeatureService::class.java)
     }
 
-    fun save(id: UUID?, featureCode: String): Feature {
+    suspend fun save(id: UUID?, featureCode: String): Feature {
         val compilationResult = compilationService.compile(featureCode)
         val feature = if (compilationResult.success) {
             Feature(id = id ?: UUID.randomUUID(), name = compilationResult.featureBlock?.name, code = featureCode)
@@ -24,7 +24,7 @@ class FeatureService(
             throw RuntimeException("failed to save feature: ${compilationResult.error?.message}")
         }
 
-       try {
+        try {
             featureRepository.save(feature).also {
                 logger.info("successfully saved feature with id: ${feature.id}")
             }
@@ -36,17 +36,10 @@ class FeatureService(
         return feature
     }
 
-    fun getAllStable(): List<Feature> {
-        val features = featureRepository.findAll()
-        return features.filter { f ->
-            try {
-                compilationService.compile(f.code).takeIf { it.success }!!.featureBlock
-                true
-            } catch (_ : Throwable) {
-                false
-            }
-        }
+    suspend fun getAllStable(): List<Feature> {
+        return featureRepository.findAll()
+            .filter { f -> compilationService.compile(f.code).success }
+            .toList()
     }
-
 
 }
