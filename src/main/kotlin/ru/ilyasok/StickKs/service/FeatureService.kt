@@ -1,5 +1,7 @@
 package ru.ilyasok.StickKs.service
 
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.toList
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -10,7 +12,8 @@ import java.util.UUID
 @Service
 class FeatureService(
     private val compilationService: FeatureCompilationService,
-    private val featureRepository: IFeatureRepository
+    private val featureRepository: IFeatureRepository,
+    private val featureProvider: FeatureProvider
 ) {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(FeatureService::class.java)
@@ -33,6 +36,7 @@ class FeatureService(
             throw RuntimeException("failed to save feature with id:\n ${feature.id}", e)
         }
 
+        featureProvider.provide(compilationResult.featureBlock!!)
         return feature
     }
 
