@@ -20,7 +20,7 @@ import ru.ilyasok.StickKs.service.FeatureService
 class FeatureController(private val featureService: FeatureService) {
 
     @GetMapping
-    fun featureEditor(model: Model): String {
+    suspend fun featureEditor(model: Model): String {
         val features = featureService.getAllStable()
         model.addAttribute("features", features)
         return "feature-editor"
@@ -28,7 +28,7 @@ class FeatureController(private val featureService: FeatureService) {
 
     @PostMapping("/save")
     @ResponseBody
-    fun save(@RequestBody req: SaveFeatureRequest): Feature {
+    suspend fun save(@RequestBody req: SaveFeatureRequest): Feature {
         try {
             return featureService.save(req.id, req.code)
         } catch (e: Exception) {
