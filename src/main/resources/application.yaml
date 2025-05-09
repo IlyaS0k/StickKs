@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: StickKs
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+  liquidbase:
+    enabled: true
+    url: jdbc:postgresql://localhost:5435/${POSTGRES_DB}
+    user: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    change-log: classpath:/db/changelog/changelog.xml
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/${POSTGRES_DB}
+    user: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+tdlib.config:
+  use-message-database: true
+  database-directory: tdlib
+  use-secret-chats: true
+  api-id: ${TDLIB_API_ID}
+  api-hash: ${TDLIB_API_HASH}
+  system-language-code: en
+  device-model: Desktop
+  application-version: 1.0
+
+features:
+  limit: 65536
