@@ -1,0 +1,44 @@
+package ru.ilyasok.StickKs.dsl
+
+import java.time.Instant
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
+
+class WithTimeoutAvailabilityBlock(
+    val afterStart: Duration,
+    val timeout: Duration?,
+    val limit: Int
+) : AvailabilityBlock() {
+
+    override fun isAvailable(meta: FeatureMeta): Boolean {
+        val now = Instant.now()
+        if (limit <= 0) return false
+        if (timeout != null &&
+            meta.lastSuccessExecutionAt != null &&
+            meta.lastSuccessExecutionAt.plus(timeout.toJavaDuration()).isAfter(now)
+        ) return false
+        if (meta.lastSuccessExecutionAt == null &&
+            meta.createdAt.plus(afterStart.toJavaDuration()).isAfter(now)
+        ) return false
+        return true
+    }
+}
+
+class WithTimeoutAvailabilityBlockBuilder {
+    var afterStart: Duration? = null
+    var timeout: Duration? = null
+    var limit: Int = Int.MAX_VALUE
+
+    fun build(): WithTimeoutAvailabilityBlock {
+        require(limit > 0) { "limit is not greater than 0" }
+        require((timeout == null && limit == 1) || timeout != null) { "action block is not initialized correctly" }
+        return WithTimeoutAvailabilityBlock(afterStart = afterStart ?: Duration.ZERO, timeout = timeout, limit = limit)
+    }
+}
+
+@FeatureDSL
+fun FeatureBlockBuilder.withTimeout(block: WithTimeoutAvailabilityBlockBuilder.() -> Unit): WithTimeoutAvailabilityBlock {
+    val a = WithTimeoutAvailabilityBlockBuilder().apply(block).build()
+    this.availability = a
+    return a
+}

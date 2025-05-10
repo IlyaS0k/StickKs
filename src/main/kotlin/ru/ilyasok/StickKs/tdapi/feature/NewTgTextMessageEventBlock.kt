@@ -8,6 +8,6 @@ import ru.ilyasok.StickKs.dsl.OnEventBlockBuilder
 @FeatureDSL
 fun OnEventBlockBuilder.newTelegramMessage(block: EventBlockBuilder<TgNewTextMessageContext>.() -> Unit): EventBlock<TgNewTextMessageContext> {
     val e = EventBlockBuilder<TgNewTextMessageContext>().apply(block).build(TgNewTextMessageContext::class)
-    this.events.add(e)
+    this.event = e
     return e
 }

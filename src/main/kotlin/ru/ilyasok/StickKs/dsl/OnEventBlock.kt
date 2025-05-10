@@ -1,12 +1,13 @@
 package ru.ilyasok.StickKs.dsl
 
-class OnEventBlock(val events: List<EventBlock<*>>)
+class OnEventBlock(val event: EventBlock<*>)
 
 class OnEventBlockBuilder() {
-    var events: MutableList<EventBlock<*>> = mutableListOf()
+    lateinit var event: EventBlock<*>
 
     fun build() : OnEventBlock {
-        return OnEventBlock(events)
+        assert(::event.isInitialized) {"empty onEvent block"}
+        return OnEventBlock(event)
     }
 }
 
