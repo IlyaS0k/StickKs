@@ -9,13 +9,14 @@ import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQuery
 import ru.ilyasok.StickKs.tdapi.model.response.TdQueryResult
 
 interface ITgClient {
-    val adapteeClient: Client
     val mainHandler: ITdMainHandler
     val tgClientParams: TgClientParams
 
     fun send(query: TdApi.Function<*>)
 
-    suspend fun getMe(): TdQueryResult<TdApi.Users?, TdApi.Error>
+    suspend fun getMe(): TdQueryResult<TdApi.User?, TdApi.Error>
+
+    suspend fun logout(): TdQueryResult<TdApi.Ok?, TdApi.Error>
 
     suspend fun getAuthorizationState(): TdQueryResult<TgClientAuthorizationState, TdApi.Error>
 
@@ -34,4 +35,6 @@ interface ITgClient {
     suspend fun <R : TdApi.Object> sendWithCallback(
         query: TdApi.Function<*>
     ): TdQueryResult<R?, TdApi.Error>
+
+    fun initializeClient()
 }

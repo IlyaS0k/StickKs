@@ -12,8 +12,8 @@ sealed class TdQueryResult<R, E> {
         }
     }
 
-    fun<T> handle(buildHandlers: TdQueryesultBuilder<R, E, T>.() -> Unit): T? {
-        val handlers = TdQueryesultBuilder<R, E, T>().apply(buildHandlers).build()
+    suspend fun<T> handle(buildHandlers: TdQueryResultBuilder<R, E, T>.() -> Unit): T? {
+        val handlers = TdQueryResultBuilder<R, E, T>().apply(buildHandlers).build()
         return when (this) {
             is SuccessTdQueryResult -> handlers.onSuccess(result)
             is ErrorTdQueryResult -> handlers.onError(error)

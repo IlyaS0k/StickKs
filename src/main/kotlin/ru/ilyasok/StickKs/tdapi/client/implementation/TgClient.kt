@@ -1,5 +1,6 @@
 package ru.ilyasok.StickKs.tdapi.client.implementation
 
+import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -12,7 +13,7 @@ import ru.ilyasok.StickKs.tdapi.client.TgClientParams
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdMainHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQuery
-import ru.ilyasok.StickKs.tdapi.model.response.TdQueryHandlerResult
+import ru.ilyasok.StickKs.tdapi.model.response.TdQueryResult
 
 /**
  * Kotlin adapter of native [Client]
@@ -24,7 +25,12 @@ class TgClient @Autowired constructor(
     override val tgClientParams: TgClientParams
 ) : ITgClient {
 
-    override val adapteeClient = createNativeClient(mainHandler)
+    private var adapteeClient: Client? = null
+
+    @PostConstruct
+    fun postConstruct() {
+        initializeClient()
+    }
 
     override suspend fun getAuthorizationState() = sendWithCallback(
         TdApi.GetAuthorizationState(),
@@ -54,15 +60,21 @@ class TgClient @Autowired constructor(
         sendWithCallback(TdApi.CheckAuthenticationCode(code))
 
     override fun send(query: TdApi.Function<*>) {
-        adapteeClient.send(query, mainHandler)
+        adapteeClient!!.send(query, mainHandler)
     }
+
+    override suspend fun getMe(): TdQueryResult<TdApi.User?, TdApi.Error> =
+        sendWithCallback(TdApi.GetMe())
+
+    override suspend fun logout(): TdQueryResult<TdApi.Ok?, TdApi.Error> =
+        sendWithCallback(TdApi.LogOut())
 
     override suspend fun <R, E> sendWithCallback(
         query: TdApi.Function<*>,
         queryHandler: ITdQuery<R, E>
     ): TdQueryResult<R, E> = coroutineScope {
         val channel = Channel<TdQueryResult<R, E>>()
-        adapteeClient.send(query) { tdobj ->
+        adapteeClient!!.send(query) { tdobj ->
             launch {
                 if (tdobj is TdApi.Error) {
                     channel.send(TdQueryResult.error(queryHandler.onError(tdobj)))
@@ -89,11 +101,10 @@ class TgClient @Autowired constructor(
         return sendWithCallback(query, defaultQueryHandler)
     }
 
-    private fun createNativeClient(resultHandler: ITdMainHandler): Client {
+    override fun initializeClient() {
         val logVerbosityLevel = TdApi.SetLogVerbosityLevel(0)
         Client.execute(logVerbosityLevel)
-        val client = Client.create(resultHandler, null, null)
-        return client
+        adapteeClient = Client.create(mainHandler, null, null)
     }
 
 }

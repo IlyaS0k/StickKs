@@ -14,7 +14,7 @@ class TdMainHandler(
 ) : ITdMainHandler {
 
     override fun onResult(obj: TdApi.Object): Unit = runBlocking {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.Default).launch {
          for (handler in handlers) {
                 handler.handle(obj)
             }

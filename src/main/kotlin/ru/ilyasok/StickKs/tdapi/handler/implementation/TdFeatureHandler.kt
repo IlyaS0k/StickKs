@@ -1,7 +1,5 @@
 package ru.ilyasok.StickKs.tdapi.handler.implementation
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.springframework.beans.factory.annotation.Autowired
@@ -15,7 +13,7 @@ import ru.ilyasok.StickKs.tdapi.feature.TgNewTextMessageContext
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdHandler
 
 @Component
-open class TdFeatureHandler(@Lazy private val client: ITgClient) : ITdHandler, IEventSource {
+class TdFeatureHandler(@Lazy private val client: ITgClient) : ITdHandler, IEventSource {
 
     @Autowired
     @Lazy
@@ -23,7 +21,7 @@ open class TdFeatureHandler(@Lazy private val client: ITgClient) : ITdHandler, I
 
     override suspend fun handle(obj: TdApi.Object) = coroutineScope {
         try {
-            async(Dispatchers.IO) {
+            async {
                 self.publishEvent(buildEvent(obj))
             }
             Unit
@@ -42,9 +40,7 @@ open class TdFeatureHandler(@Lazy private val client: ITgClient) : ITdHandler, I
                 val content = tgEvent.message.content as TdApi.MessageText
                 TgNewTextMessageContext(
                     messageText = content.text.text,
-                    sender = client.getUser(sender.userId).handle<TdApi.User> {
-                        onSuccess = { it }
-                    } ?: TdApi.User()
+                    sender = client.getUser(sender.userId).handle { onSuccess = { it } } ?: TdApi.User()
                 )
             } else null
         }

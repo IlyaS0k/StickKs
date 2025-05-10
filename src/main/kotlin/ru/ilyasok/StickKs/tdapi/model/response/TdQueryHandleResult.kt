@@ -1,13 +1,13 @@
 package ru.ilyasok.StickKs.tdapi.model.response
 
-class TdQueryesultBuilder<R, E, T> {
-    var onSuccess: (R) -> T? = { null }
-    var onError: (E) -> T? = { null }
+class TdQueryResultBuilder<R, E, T> {
+    var onSuccess: suspend (R) -> T? = { null }
+    var onError: suspend (E) -> T? = { null }
 
-    fun build(): TdQueryesult<R, E, T> = TdQueryesult(onSuccess, onError)
+    fun build(): TdQueryOnResult<R, E, T> = TdQueryOnResult(onSuccess, onError)
 }
 
-class TdQueryesult<R, E, T>(
-    val onSuccess: (R) -> T?,
-    val onError: (E) -> T?
+class TdQueryOnResult<R, E, T>(
+    val onSuccess: suspend (R) -> T?,
+    val onError: suspend (E) -> T?
 )
