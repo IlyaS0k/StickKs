@@ -6,7 +6,8 @@ import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.ResponseBody
+import ru.ilyasok.StickKs.model.SubmitLoginCodeRequest
+import ru.ilyasok.StickKs.model.SubmitPhoneRequest
 import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 
@@ -32,8 +33,8 @@ class LoginController(val client: ITgClient) {
     }
 
     @PostMapping("/login/submit-phone")
-    @ResponseBody
-    suspend fun submitPhone(@RequestBody phoneNumber: String): ResponseEntity<String> {
+    suspend fun submitPhone(@RequestBody req: SubmitPhoneRequest): ResponseEntity<String> {
+        val phoneNumber = req.phone
         return phoneNumber.let {
             client.setPhoneNumber(phoneNumber).handle {
                 onSuccess = { res ->
@@ -51,8 +52,8 @@ class LoginController(val client: ITgClient) {
     }
 
     @PostMapping("/login/submit-login-code")
-    @ResponseBody
-    suspend fun submitLoginCode(@RequestBody loginCode: String): ResponseEntity<String> {
+    suspend fun submitLoginCode(@RequestBody req: SubmitLoginCodeRequest): ResponseEntity<String> {
+        val loginCode = req.loginCode
         return loginCode.let {
             client.checkAuthenticationCode(loginCode).handle {
                 onSuccess = { res -> ResponseEntity.status(HttpStatus.OK).body("Login success") }

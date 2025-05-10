@@ -33,7 +33,7 @@ async function loginByPhone(phone) {
 function sendPhone(phone) {
     return fetch("http://localhost:8080/login/submit-phone", {
         method: "POST",
-        body: phone,
+        body: JSON.stringify({ phone }),
         headers: {
             "Content-type": "application/json; charset=utf-8"
         }
@@ -43,7 +43,7 @@ function sendPhone(phone) {
 function sendLoginCode(loginCode) {
     return fetch("http://localhost:8080/login/submit-login-code", {
         method: "POST",
-        body: loginCode,
+        body: JSON.stringify({ loginCode }),
         headers: {
             "Content-type": "application/json; charset=utf-8"
         }
