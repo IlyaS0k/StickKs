@@ -1,9 +1,9 @@
 package ru.ilyasok.StickKs.repository
 
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
-import ru.ilyasok.StickKs.model.Feature
+import org.springframework.stereotype.Repository
+import ru.ilyasok.StickKs.model.FeatureModel
 import java.util.UUID
 
-interface IFeatureRepository : CoroutineCrudRepository<Feature, UUID> {
-    suspend fun getById(id: UUID): Feature?
-}
+@Repository
+interface IFeatureRepository : CoroutineCrudRepository<FeatureModel, UUID>
