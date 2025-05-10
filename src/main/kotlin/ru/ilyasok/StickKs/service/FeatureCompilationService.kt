@@ -1,5 +1,10 @@
 package ru.ilyasok.StickKs.service
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.async
+import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.compilerRunner.toArgumentStrings
@@ -8,16 +13,15 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import ru.ilyasok.StickKs.dsl.DSLDependenciesProvider
 import ru.ilyasok.StickKs.dsl.FeatureBlock
-import ru.ilyasok.StickKs.model.Feature
 import java.io.File
 import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
-import kotlin.text.replaceFirst
 
 @Service
 class FeatureCompilationService {
 
     companion object {
+
         private val logger: Logger = LoggerFactory.getLogger(FeatureCompilationService::class.java)
 
         private const val COMPILED_METHOD_NAME = "getFeature"
@@ -44,7 +48,15 @@ class FeatureCompilationService {
 
     private val imports = DSLDependenciesProvider.provideAsString()
 
-    fun compile(featureCode: String): CompilationResult = synchronized(this) {
+    fun compileAsync(featureCode: String) = CoroutineScope(Dispatchers.IO).async {
+        compile(featureCode)
+    }
+
+    fun compile(featureCode: String): CompilationResult {
+        val threadId = Thread.currentThread().threadId()
+        val compilationOutputFile = "Feature${threadId}.kt"
+        val classToLoad = "Feature${threadId}Kt"
+        val nameSubstrToDelete = "Feature${threadId}"
         try {
             val source = imports
                 .plus("\n")
@@ -54,7 +66,7 @@ class FeatureCompilationService {
                     )
                 )
 
-            val sourceFile = File(compilationOutputDir, "Feature.kt").apply { writeText(source) }
+            val sourceFile = File(compilationOutputDir, compilationOutputFile).apply { writeText(source) }
             val bootClasses = File(UNPACKED_BOOT_CLASSES)
             val bootLibs = File(UNPACKED_BOOT_LIBS).listFiles()!!.toList()
             val args = K2JVMCompilerArguments().apply {
@@ -63,13 +75,15 @@ class FeatureCompilationService {
                 classpath = (listOf(bootClasses) + bootLibs).joinToString(File.pathSeparator) { it.absolutePath }
             }
 
-            K2JVMCompiler().exec(System.err, *args.toArgumentStrings().toTypedArray())
-
+            val exitCode = K2JVMCompiler().exec(System.err, *args.toArgumentStrings().toTypedArray())
+            if (exitCode != ExitCode.OK) {
+                return CompilationResult(success = false, error = RuntimeException(exitCode.toString()))
+            }
             val classLoader = URLClassLoader(arrayOf(compilationOutputDir.toURI().toURL()))
-            val clazz = classLoader.loadClass("FeatureKt")
+            val clazz = classLoader.loadClass(classToLoad)
             val method = clazz.getDeclaredMethod(COMPILED_METHOD_NAME)
             val feature = method.invoke(null) as FeatureBlock
-            logger.info("Successfully compiled feature\n: $featureCode")
+            logger.debug("Successfully compiled feature\n: $featureCode")
             return CompilationResult(success = true, featureBlock = feature)
         } catch (error: InvocationTargetException) {
             val e = error.targetException
@@ -78,6 +92,8 @@ class FeatureCompilationService {
         } catch (e: Throwable) {
             logger.info("Error while compiling feature\n: $featureCode", e)
             return CompilationResult(success = false, error = e)
+        } finally {
+            compilationOutputDir.listFiles()?.forEach { if (it.name.contains(nameSubstrToDelete)) it.delete() }
         }
     }
 
