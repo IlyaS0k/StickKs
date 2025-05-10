@@ -37,7 +37,17 @@ class FeatureController(private val featureService: FeatureService) {
             feature.stability = FeatureStability.STABLE
             return feature
         } catch (e: Exception) {
-            throw InvalidFeatureException(e.message ?: "")
+            throw FeatureOperationException(e.message ?: "")
+        }
+    }
+
+    @PostMapping("/delete")
+    @ResponseBody
+    suspend fun delete(@RequestBody req: DeleteFeatureRequest) {
+        try {
+            return featureService.delete(req.id)
+        } catch (e: Exception) {
+            throw FeatureOperationException(("Failed to delete feature: " + e.message))
         }
     }
 
