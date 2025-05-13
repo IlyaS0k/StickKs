@@ -1,4 +1,4 @@
-package ru.ilyasok.StickKs.core
+package ru.ilyasok.StickKs.core.event.queue
 
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
@@ -8,6 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.core.context.EventContext
 import ru.ilyasok.StickKs.dsl.FeatureProcessor
@@ -16,7 +17,11 @@ import ru.ilyasok.StickKs.dsl.FeatureProcessor
 class EventQueue(
     private val featureProcessor: FeatureProcessor
 ) {
-    private val queue: Channel<EventContext> = Channel(Channel.UNLIMITED)
+    private val queue: Channel<EventContext> = Channel(Channel.Factory.UNLIMITED)
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java)
+    }
 
     @PostConstruct
     fun postConstruct() = runBlocking {
@@ -32,11 +37,13 @@ class EventQueue(
 
     fun enqueue(e: EventContext) = runBlocking {
         queue.send(e)
+        logger.info("added new event into $e")
     }
 
     private suspend fun loop() = coroutineScope {
         while (true) {
             val ec = queue.receive()
+            logger.info("received event $ec")
             launch {
                 featureProcessor.process(ec)
             }
