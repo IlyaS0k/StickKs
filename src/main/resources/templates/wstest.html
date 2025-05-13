@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2em;
+        }
+        button {
+            margin-right: 1em;
+            padding: 0.6em 1.2em;
+            font-size: 1em;
+        }
+    </style>
+</head>
+<body>
+<h1>WebSocket Tester</h1>
+<button id="openBtn">Open WebSocket</button>
+<button id="closeBtn" disabled>Close WebSocket</button>
+
+<script>
+    let socket = null;
+
+    const openBtn = document.getElementById("openBtn");
+    const closeBtn = document.getElementById("closeBtn");
+
+    openBtn.onclick = () => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            console.log("WebSocket already open");
+            return;
+        }
+
+        socket = new WebSocket("ws://localhost:8080/ws");
+
+        socket.onopen = () => {
+            console.log("WebSocket opened");
+            closeBtn.disabled = false;
+        };
+
+        socket.onmessage = (event) => {
+            console.log("Received:", event.data);
+        };
+
+        socket.onclose = () => {
+            console.log("WebSocket closed");
+            closeBtn.disabled = true;
+        };
+
+        socket.onerror = (error) => {
+            console.error("WebSocket error:", error);
+        };
+    };
+
+    closeBtn.onclick = () => {
+        if (socket) {
+            socket.close();
+        }
+    };
+</script>
+</body>
+</html>

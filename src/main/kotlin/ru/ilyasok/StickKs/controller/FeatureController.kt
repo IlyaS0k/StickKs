@@ -6,13 +6,14 @@ import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseBody
 import ru.ilyasok.StickKs.exception.FeatureOperationException
 import ru.ilyasok.StickKs.model.DeleteFeatureRequest
 import ru.ilyasok.StickKs.model.FeatureModel
-import ru.ilyasok.StickKs.model.FeatureStability
+import ru.ilyasok.StickKs.model.FeatureStatus
 import ru.ilyasok.StickKs.model.SaveFeatureRequest
 import ru.ilyasok.StickKs.service.FeatureService
 import java.util.UUID
@@ -31,10 +32,12 @@ class FeatureController(private val featureService: FeatureService) {
 
     @PostMapping("/save")
     @ResponseBody
-    suspend fun save(@RequestBody req: SaveFeatureRequest): FeatureModel {
+    suspend fun save(
+        @RequestHeader("X-Request-ID") reqId: UUID,
+        @RequestBody req: SaveFeatureRequest
+    ): FeatureModel {
         try {
-            val feature = featureService.save(req.id, req.code)
-            feature.stability = FeatureStability.STABLE
+            val feature = featureService.save(req.id, reqId, req.code)
             return feature
         } catch (e: Exception) {
             throw FeatureOperationException(e.message ?: "")
@@ -43,9 +46,12 @@ class FeatureController(private val featureService: FeatureService) {
 
     @PostMapping("/delete")
     @ResponseBody
-    suspend fun delete(@RequestBody req: DeleteFeatureRequest) {
+    suspend fun delete(
+        @RequestHeader("X-Request-ID") reqId: UUID,
+        @RequestBody req: DeleteFeatureRequest
+    ) {
         try {
-            return featureService.delete(req.id)
+            return featureService.delete(req.id, reqId)
         } catch (e: Exception) {
             throw FeatureOperationException(("Failed to delete feature: " + e.message))
         }

@@ -1,30 +1,26 @@
 package ru.ilyasok.StickKs.service
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.flow.flatMapMerge
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.toList
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.DependsOn
+import org.springframework.context.annotation.Lazy
 import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import ru.ilyasok.StickKs.core.FeatureUpdateType
-import ru.ilyasok.StickKs.core.FeaturesToUpdate
+import ru.ilyasok.StickKs.core.feature.FeatureUpdateType
+import ru.ilyasok.StickKs.core.feature.FeatureUpdatesQueue
 import ru.ilyasok.StickKs.dsl.Feature
 import ru.ilyasok.StickKs.dsl.FeatureBlock
 import ru.ilyasok.StickKs.dsl.FeatureMeta
 import ru.ilyasok.StickKs.model.FeatureModel
-import ru.ilyasok.StickKs.model.FeatureStability
+import ru.ilyasok.StickKs.model.FeatureStatus
 import ru.ilyasok.StickKs.model.toFeature
 import ru.ilyasok.StickKs.repository.IFeatureRepository
-import java.io.File
 import java.time.Instant
 import java.util.UUID
 
@@ -34,8 +30,11 @@ import java.util.UUID
 class FeatureService(
     private val compilationService: FeatureCompilationService,
     private val featureRepository: IFeatureRepository,
-    private val featuresToUpdate: FeaturesToUpdate,
+    private val featureUpdatesQueue: FeatureUpdatesQueue
 ) {
+
+    @Autowired @Lazy lateinit var self: FeatureService
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(FeatureService::class.java)
     }
@@ -52,37 +51,46 @@ class FeatureService(
         throw RuntimeException("Max optimistic retry attempts exceeded")
     }
 
-    @Transactional
-    suspend fun save(id: UUID?, featureCode: String): FeatureModel {
+
+    suspend fun save(id: UUID?, reqId: UUID, featureCode: String): FeatureModel {
         val isUpdate = id != null
         val compilationResult = compilationService.compile(featureCode)
         if (!compilationResult.success) {
             throw RuntimeException("Failed to save feature: ${compilationResult.error?.toString()}")
         }
         return if (isUpdate)
-            update(id, featureCode, compilationResult.featureBlock!!)
+            self.update(id, featureCode, compilationResult.featureBlock!!).also { f ->
+                featureUpdatesQueue.add(f.id, reqId,FeatureUpdateType.CODE_UPDATED)
+            }
         else
-            create(featureCode, compilationResult.featureBlock!!)
+            self.create(featureCode,  compilationResult.featureBlock!!).also { f ->
+                featureUpdatesQueue.add(f.id, reqId,FeatureUpdateType.CREATED)
+            }
     }
 
     @Transactional
-    suspend fun delete(id: UUID) {
+    suspend fun delete(id: UUID, reqId: UUID) {
         if (featureRepository.existsById(id)) featureRepository.deleteById(id)
-        featuresToUpdate.add(id, FeatureUpdateType.DELETED)
+        featureUpdatesQueue.add(id, reqId,FeatureUpdateType.DELETED)
     }
 
 
-    private suspend fun update(id: UUID, featureCode: String, compiledFeature: FeatureBlock): FeatureModel {
+    @Transactional
+    suspend fun update(id: UUID, featureCode: String, compiledFeature: FeatureBlock): FeatureModel {
         val featureModel = featureRepository.findById(id)
         requireNotNull(featureModel)
 
         val updatedFeatureModel = try {
-            optimisticTry {
+            optimisticTry(20) {
                 featureRepository.save(
                     featureModel.copy(
                         name = compiledFeature.name,
                         code = featureCode,
-                        lastModifiedAt = Instant.now()
+                        lastModifiedAt = Instant.now(),
+                        lastFailedExecutionAt = null,
+                        lastSuccessExecutionAt = null,
+                        successExecutionsAmount = 0L,
+                        failedExecutionsAmount = 0L
                     )
                 ).also {
                     logger.info("Successfully update feature with id: $id")
@@ -93,15 +101,16 @@ class FeatureService(
             logger.error(message, e)
             throw RuntimeException(message, e)
         }
-        featuresToUpdate.add(id, FeatureUpdateType.CODE_UPDATED)
+        updatedFeatureModel.status = FeatureStatus.UPDATING
 
         return updatedFeatureModel
     }
 
-    private suspend fun create(featureCode: String, compiledFeature: FeatureBlock): FeatureModel {
+        @Transactional
+    suspend fun create(featureCode: String, compiledFeature: FeatureBlock): FeatureModel {
         val id = UUID.randomUUID()
         val createdFeatureModel = try {
-            optimisticTry {
+            optimisticTry(20) {
                 featureRepository.save(
                     FeatureModel(
                         id = id,
@@ -121,7 +130,7 @@ class FeatureService(
             logger.error(message, e)
             throw RuntimeException(message, e)
         }
-        featuresToUpdate.add(id, FeatureUpdateType.CREATED)
+        createdFeatureModel.status = FeatureStatus.CREATING
 
         return createdFeatureModel
     }
@@ -136,7 +145,7 @@ class FeatureService(
         }
 
         val updatedFeatureModel = try {
-            optimisticTry {
+            optimisticTry(20) {
                 featureRepository.save(
                     feature.copy(
                         createdAt = newMeta.createdAt,
@@ -155,7 +164,6 @@ class FeatureService(
             logger.error(message, e)
             throw RuntimeException(message, e)
         }
-        featuresToUpdate.add(id, FeatureUpdateType.META_UPDATED)
 
         return updatedFeatureModel
     }
@@ -173,10 +181,14 @@ class FeatureService(
         )
     }
 
+    @Transactional
     suspend fun getById(id: UUID): Feature {
-        val feature = featureRepository.findById(id) ?: throw RuntimeException("Feature not found with id: $id")
-
-        return mapFeatureModelToFeatureOrNull(feature) ?: throw RuntimeException("Failed to compile feature")
+        val featureModel = featureRepository.findById(id) ?: throw RuntimeException("Feature not found with id: $id")
+        val compilationResult = compilationService.compile(featureModel.code)
+        return if (compilationResult.success)
+            featureModel.toFeature(compilationResult.featureBlock!!)
+        else
+            throw RuntimeException("Failed to compile feature with id = ${featureModel.id}")
     }
 
     suspend fun existsById(id: UUID): Boolean {
@@ -192,25 +204,28 @@ class FeatureService(
             .buffer()
             .map { (feature, featureCompileJob) ->
                 val compilationResult = featureCompileJob.await()
-                feature.stability = if (compilationResult.success)
-                    FeatureStability.STABLE
+                feature.status = if (compilationResult.success)
+                    if (feature.failedExecutionsAmount == 0L) FeatureStatus.LOADING else FeatureStatus.LOADING_UNSTABLE
                 else
-                    FeatureStability.BROKEN
+                    FeatureStatus.BROKEN
                 feature
             }
     }
 
     fun getAllStable(): Flow<Feature> {
-        return featureRepository.findAll().mapNotNull { f -> mapFeatureModelToFeatureOrNull(f) }
-    }
-
-    private fun mapFeatureModelToFeatureOrNull(featureModel: FeatureModel): Feature? {
-        val compilation = compilationService.compile(featureModel.code)
-        return if (compilation.success) {
-            featureModel.toFeature(compilation.featureBlock!!)
-        } else {
-            null
-        }
+        return featureRepository.findAll()
+            .map { featureModel ->
+                val featureCompileJob = compilationService.compileAsync(featureModel.code)
+                featureModel to featureCompileJob
+            }
+            .buffer()
+            .mapNotNull { (featureModel, featureCompileJob) ->
+                val compilationResult = featureCompileJob.await()
+                if (compilationResult.success)
+                    featureModel.toFeature(compilationResult.featureBlock!!)
+                else
+                    null
+            }
     }
 
 }

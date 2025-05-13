@@ -1,14 +1,29 @@
 class FeaturesContext {
     #currentFeature
+    newFeatureSelections = 0
     #features
+    wsEventListeners = new Set()
+    wsMessageBuffer = []
+    APP_ADDRESS = "localhost:8080"
 
-    STABILITY_STABLE = "STABLE"
-    STABILITY_UNSTABLE = "UNSTABLE"
-    STABILITY_BROKEN = "BROKEN"
+    STATUS_STABLE = "STABLE"
+    STATUS_UNSTABLE = "UNSTABLE"
+    STATUS_BROKEN = "BROKEN"
+    STATUS_LOADING = "LOADING"
+    STATUS_LOADING_UNSTABLE = "LOADING_UNSTABLE"
+    STATUS_CREATING = "CREATING"
+    STATUS_UPDATING = "UPDATING"
+    STATUS_DELETING = "DELETING"
 
     FEATURE_UPDATE = "UPDATE"
     FEATURE_DELETE = "DELETE"
     FEATURE_CREATE = "CREATE"
+
+    NOTIFICATION_FEATURE_LOADED = "FEATURE_LOADED"
+    NOTIFICATION_FEATURE_DELETED = "FEATURE_DELETED"
+    NOTIFICATION_FEATURE_CREATED = "FEATURE_CREATED"
+    NOTIFICATION_FEATURE_UPDATED = "FEATURE_UPDATED"
+    NOTIFICATION_FEATURE_UNSTABLE = "FEATURE_UNSTABLE"
 
     constructor(features) {
         this.#features = features
@@ -26,28 +41,37 @@ class FeaturesContext {
         if (newCurrentFeature == null) {
             monacoEditor.setValue("feature {\n\n}")
         } else {
-            let featureCode = features.find(f => f.id === newCurrentFeature).code
+            let featureCode = this.#features.find(f => f.id === newCurrentFeature).code
             monacoEditor.setValue(featureCode)
         }
         this.#currentFeature = newCurrentFeature
     }
 
     addFeature(feature) {
-        features.push(feature)
+        this.#features.push(feature)
         renderFeature(feature.id, this.FEATURE_CREATE)
     }
 
     updateFeature(feature) {
-        const index = features.findIndex(f => f.id === feature.id)
-        features[index] = feature
+        const index = this.#features.findIndex(f => f.id === feature.id)
+        this.#features[index] = feature
         renderFeature(feature.id, this.FEATURE_UPDATE)
     }
 
-    deleteFeature(feature) {
-        const index = features.findIndex(f => f.id === feature.id)
+    updateFeatureStatus(id, status) {
+        const feature = this.#features.find(f => f.id === id)
+        if (feature != null) {
+            feature.status = status
+            renderFeature(feature.id, this.FEATURE_UPDATE)
+        }
+    }
+
+    deleteFeature(id) {
+        console.log(`deleting feature with id ${id}`)
+        const index = this.#features.findIndex(f => f.id === id)
         if (index !== -1) {
-            features.splice(index, 1)
-            renderFeature(feature.id, this.FEATURE_DELETE)
+            this.#features.splice(index, 1)
+            renderFeature(id, this.FEATURE_DELETE)
         }
     }
 }
@@ -70,9 +94,85 @@ require(['vs/editor/editor.main'], function () {
 
 let context = new FeaturesContext(features)
 
-function initialization() {
+
+async function initialization() {
     context.currentFeature = null
     renderFeatures()
+    let ws = new WebSocket(`ws://${context.APP_ADDRESS}/ws`)
+    ws.addEventListener("message", event => {
+        try {
+            const message = JSON.parse(event.data)
+            console.log("RECEIVED NOTIFICATION MESSAGE: \n" + JSON.stringify(message, null, 2))
+            if (message.type === context.NOTIFICATION_FEATURE_UNSTABLE) {
+                context.updateFeatureStatus(message.id, context.STATUS_UNSTABLE)
+                return
+            }
+            let handled = false
+            for (const listener of context.wsEventListeners) {
+                if (listener(message) === true) {
+                    handled = true;
+                }
+            }
+
+            if (!handled) {
+                context.wsMessageBuffer.push(message)
+            }
+        } catch (e) {
+            console.error("Failed to parse message:", e)
+        }
+    })
+    ws.addEventListener("open", () => {
+        console.log("WebSocket connection established")
+    })
+    ws.addEventListener("close", () => {
+        window.location.href = "/error"
+        throw new Error("WebSocket closed")
+    })
+    for (const f of context.features.filter(f => f.status === context.STATUS_LOADING || f.status === context.STATUS_LOADING_UNSTABLE)) {
+        waitWsEvent(null, f.id, context.NOTIFICATION_FEATURE_LOADED)
+            .then(() => {
+                context.updateFeatureStatus(f.id, f.status === context.STATUS_LOADING ? context.STATUS_STABLE : context.STATUS_UNSTABLE)
+            })
+            .catch((e) => {
+                console.warn(`Timeout or error for feature ${f.id}:`, e);
+            });
+    }
+}
+
+function onMessage(callback) {
+    context.wsEventListeners.add(callback);
+    return () => context.wsEventListeners.delete(callback);
+}
+
+
+function waitWsEvent(reqId, featureId, eventType, timeoutMs = 15000) {
+    return new Promise((resolve, reject) => {
+        const index = context.wsMessageBuffer.findIndex(
+            msg => (eventType === null || msg.type === eventType) &&
+                    (featureId === null || msg.id === featureId) &&
+                    (reqId === null || msg.reqId === reqId)
+        )
+
+        if (index !== -1) {
+            const msg = context.wsMessageBuffer[index]
+            context.wsMessageBuffer.splice(index, 1)
+            return resolve(msg)
+        }
+        const timeout = setTimeout(() => {
+            unsubscribe();
+            reject(new Error("Timeout waiting for event"));
+        }, timeoutMs);
+
+        const unsubscribe = onMessage(msg => {
+            if (reqId !== null && reqId !== msg.reqId) return false
+            if (featureId !== null && featureId !== msg.id) return false
+            if (eventType !== null && eventType !== msg.type) return false
+            clearTimeout(timeout);
+            unsubscribe();
+            resolve(msg);
+            return true
+        });
+    });
 }
 
 function renderFeatures() {
@@ -90,18 +190,22 @@ function renderFeatures() {
 
 function renderFeature(id, op) {
     let list = document.getElementById('featuresList')
-    let f = context.features.find(f => f.id === id)
-    const newDiv = createFeature(f)
+    let f
+    let newDiv
     switch (op) {
         case context.FEATURE_CREATE:
+            f = context.features.find(f => f.id === id)
+            newDiv = createFeature(f)
             list.append(newDiv)
             break
         case context.FEATURE_UPDATE:
-            const prevDiv = list.querySelector(`#${id}`)
+            f = context.features.find(f => f.id === id)
+            newDiv = createFeature(f)
+            const prevDiv = list.querySelector(`#${CSS.escape(id)}`)
             prevDiv.replaceWith(newDiv)
             break
         case context.FEATURE_DELETE:
-            const deleteDiv = list.querySelector(`#${id}`)
+            const deleteDiv = list.querySelector(`#${CSS.escape(id)}`)
             deleteDiv.replaceWith('')
             break
         default:
@@ -113,17 +217,25 @@ function createFeature(f) {
     const div = document.createElement('div');
     div.className = 'feature-item';
     div.id = f.id
-    switch (f.stability) {
-        case context.STABILITY_STABLE:
+    switch (f.status) {
+        case context.STATUS_STABLE:
             div.innerText = `${f.name}`
             break
-        case context.STABILITY_BROKEN:
+        case context.STATUS_BROKEN:
             div.innerText = `[BROKEN] ${f.name}`
             div.style.color = "red"
             break
-        case context.STABILITY_UNSTABLE:
+        case context.STATUS_UNSTABLE:
             div.innerText = `[UNSTABLE] ${f.name}`
             div.style.color = "orange"
+            break
+        case context.STATUS_LOADING:
+        case context.STATUS_LOADING_UNSTABLE:
+        case context.STATUS_CREATING:
+        case context.STATUS_UPDATING:
+        case context.STATUS_DELETING:
+            div.innerText = `[${f.status}...] ${f.name}`
+            div.style.color = "gray"
             break
         default:
     }
@@ -135,46 +247,61 @@ function loadFeature(id) {
     context.currentFeature = id
 }
 
+
 async function deleteFeature() {
     const id = context.currentFeature
-    console.log(id)
+    if (id === null) {
+        alert("Attempt to delete unsaved feature")
+        return
+    }
     try {
         if (confirm("Are you sure you want delete this feature?")) {
-            const deleteResponse = await fetch("http://localhost:8080/features/delete", {
+            const reqId = crypto.randomUUID()
+            const deleteResponse = await fetch(`http://${context.APP_ADDRESS}/features/delete`, {
                 method: "POST",
                 body: JSON.stringify({id}),
                 headers: {
-                    "Content-type": "application/json; charset=utf-8"
+                    "Content-type": "application/json; charset=utf-8",
+                    "X-Request-ID": reqId
                 }
             })
 
             if (!deleteResponse.ok) {
                 alert("Delete error: " + await deleteResponse.text());
+            } else {
+                context.updateFeatureStatus(id, context.STATUS_DELETING)
+                await waitWsEvent(reqId,null, context.NOTIFICATION_FEATURE_DELETED)
+                context.deleteFeature(id)
+                if (context.currentFeature === id) {
+                    createNewFeature()
+                }
             }
         }
     } catch (error) {
         alert("Delete error: " + error.message);
     }
-
 }
 
 async function saveFeature() {
     let featureToSaveId = context.currentFeature
     let isNewFeature = featureToSaveId == null
+    let oldnewFeatureSelections = context.newFeatureSelections
     const code = monacoEditor.getValue()
     if (!code) {
         alert("Code is empty!")
         return
     }
     try {
-        const response = await fetch('http://localhost:8080/features/save', {
+        let reqId = crypto.randomUUID()
+        const response = await fetch(`http://${context.APP_ADDRESS}/features/save`, {
             method: "POST",
             body: JSON.stringify({
                 id: featureToSaveId,
                 code: code
             }),
             headers: {
-                "Content-type": "application/json; charset=utf-8"
+                "Content-type": "application/json; charset=utf-8",
+                "X-Request-ID": reqId
             }
         })
 
@@ -185,8 +312,15 @@ async function saveFeature() {
             const feature = await response.json()
             if (isNewFeature) {
                 context.addFeature(feature)
+                if (context.currentFeature == null && oldnewFeatureSelections === context.newFeatureSelections) {
+                    context.currentFeature = feature.id
+                }
+                await waitWsEvent(reqId, null, context.NOTIFICATION_FEATURE_CREATED)
+                context.updateFeatureStatus(feature.id, context.STATUS_STABLE)
             } else {
                 context.updateFeature(feature)
+                await waitWsEvent(reqId, null, context.NOTIFICATION_FEATURE_UPDATED)
+                context.updateFeatureStatus(feature.id, context.STATUS_STABLE)
             }
             alert("Saved")
         }
@@ -198,10 +332,11 @@ async function saveFeature() {
 async function logout() {
     try {
         if (confirm("Are you sure you want to log out?")) {
-            const logout = await fetch("http://localhost:8080/logout", {
+            const logout = await fetch(`http://${context.APP_ADDRESS}/logout`, {
                 method: "POST",
                 headers: {
-                    "Content-type": "application/json; charset=utf-8"
+                    "Content-type": "application/json; charset=utf-8",
+                    "X-Request-ID": crypto.randomUUID()
                 }
             })
 
@@ -218,6 +353,7 @@ async function logout() {
 }
 
 function createNewFeature() {
+    context.newFeatureSelections++
     context.currentFeature = null
 }
 

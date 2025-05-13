@@ -30,8 +30,10 @@ async function loginByPhone(phone) {
     }
 }
 
+const APP_ADDRESS = "localhost:8080"
+
 function sendPhone(phone) {
-    return fetch("http://localhost:8080/login/submit-phone", {
+    return fetch(`http://${APP_ADDRESS}/login/submit-phone`, {
         method: "POST",
         body: JSON.stringify({ phone }),
         headers: {
@@ -41,7 +43,7 @@ function sendPhone(phone) {
 }
 
 function sendLoginCode(loginCode) {
-    return fetch("http://localhost:8080/login/submit-login-code", {
+    return fetch(`http://${APP_ADDRESS}/login/submit-login-code`, {
         method: "POST",
         body: JSON.stringify({ loginCode }),
         headers: {

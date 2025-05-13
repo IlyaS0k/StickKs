@@ -35,13 +35,17 @@ data class FeatureModel(
 
 ) {
     @org.springframework.data.annotation.Transient
-    var stability: FeatureStability? = FeatureStability.STABLE
+    var status: FeatureStatus? = FeatureStatus.STABLE
 }
 
-enum class FeatureStability {
+enum class FeatureStatus {
     STABLE,
     UNSTABLE,
-    BROKEN
+    UPDATING,
+    CREATING,
+    BROKEN,
+    LOADING,
+    LOADING_UNSTABLE,
 }
 
 fun FeatureModel.toFeature(featureBlock: FeatureBlock) = Feature(
