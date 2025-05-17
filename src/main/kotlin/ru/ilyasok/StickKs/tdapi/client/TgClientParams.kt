@@ -1,9 +1,11 @@
 package ru.ilyasok.StickKs.tdapi.client
 
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 
 @Component
+@Profile("!test")
 class TgClientParams {
     @Value("\${tdlib.config.database-directory}")
     lateinit var databaseDirectory: String
