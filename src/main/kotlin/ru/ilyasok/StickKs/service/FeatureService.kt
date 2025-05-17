@@ -80,7 +80,8 @@ class FeatureService(
                         lastFailedExecutionAt = null,
                         lastSuccessExecutionAt = null,
                         successExecutionsAmount = 0L,
-                        failedExecutionsAmount = 0L
+                        failedExecutionsAmount = 0L,
+                        isBroken = false
                     )
                 ).also {
                     logger.info("Successfully update feature with id: $id")
@@ -110,6 +111,7 @@ class FeatureService(
                         lastModifiedAt = Instant.now(),
                         successExecutionsAmount = 0L,
                         failedExecutionsAmount = 0L,
+                        isBroken = false
                     )
                 ).also {
                     logger.info("Successfully created feature with id: $id")
