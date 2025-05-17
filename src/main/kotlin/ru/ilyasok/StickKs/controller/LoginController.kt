@@ -1,5 +1,6 @@
 package ru.ilyasok.StickKs.controller
 
+import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
@@ -12,6 +13,7 @@ import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 
 @Controller
+@Profile("!test")
 class LoginController(val client: ITgClient) {
 
 

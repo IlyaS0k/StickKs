@@ -6,9 +6,11 @@ import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.model.ChatResponse
 import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.ai.deepseek.DeepSeekChatModel
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 
 @Service
+@Profile("!test")
 class DeepseekClient(private val chatModel: DeepSeekChatModel) {
 
     fun ask(message: String): Flow<ChatResponse> {

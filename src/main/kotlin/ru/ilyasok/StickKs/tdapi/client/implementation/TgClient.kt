@@ -5,6 +5,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.tdapi.Client
 import ru.ilyasok.StickKs.tdapi.TdApi
@@ -20,6 +21,7 @@ import ru.ilyasok.StickKs.tdapi.model.response.TdQueryResult
  */
 
 @Component
+@Profile("!test")
 class TgClient @Autowired constructor(
     override val mainHandler: ITdMainHandler,
     override val tgClientParams: TgClientParams
