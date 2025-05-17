@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.DependsOn
 import org.springframework.context.annotation.Lazy
-import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.ilyasok.StickKs.core.feature.FeatureUpdateType
@@ -42,19 +41,6 @@ class FeatureService(
         val logger: Logger = LoggerFactory.getLogger(FeatureService::class.java)
     }
 
-    private suspend fun <T> optimisticTry(maxAttempts: Long = Long.MAX_VALUE, block: suspend () -> T): T {
-        val attempts = 0
-        while (attempts < maxAttempts) {
-            try {
-                return block()
-            } catch (_: OptimisticLockingFailureException) {
-                attempts.inc()
-            }
-        }
-        throw RuntimeException("Max optimistic retry attempts exceeded")
-    }
-
-
     suspend fun save(id: UUID?, reqId: UUID, featureCode: String): FeatureModel {
         val isUpdate = id != null
         val compilationResult = compilationService.compile(id, featureCode)
@@ -84,7 +70,7 @@ class FeatureService(
         requireNotNull(featureModel)
 
         val updatedFeatureModel = try {
-            optimisticTry(20) {
+            optimisticTry(10) {
                 featureRepository.save(
                     featureModel.copy(
                         name = compiledFeature.name,
@@ -114,7 +100,7 @@ class FeatureService(
     suspend fun create(featureCode: String, compiledFeature: FeatureBlock): FeatureModel {
         val id = UUID.randomUUID()
         val createdFeatureModel = try {
-            optimisticTry(20) {
+            optimisticTry(10) {
                 featureRepository.save(
                     FeatureModel(
                         id = id,
@@ -149,7 +135,7 @@ class FeatureService(
         }
 
         val updatedFeatureModel = try {
-            optimisticTry(20) {
+            optimisticTry(10) {
                 featureRepository.save(
                     feature.copy(
                         createdAt = newMeta.createdAt,

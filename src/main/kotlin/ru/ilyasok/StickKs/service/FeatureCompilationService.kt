@@ -118,7 +118,9 @@ class FeatureCompilationService(
     private suspend fun setBroken(featureId: UUID)  {
         try {
             val feature = featureRepository.findById(featureId) ?: throw RuntimeException("Feature with id $featureId not found")
-            featureRepository.save(feature.copy(isBroken = true))
+            optimisticTry(10) {
+                featureRepository.save(feature.copy(isBroken = true))
+            }
         } catch (e: Throwable) {
             logger.error("Error while setting broken feature with if\n: $featureId", e)
         }
