@@ -2,7 +2,7 @@ FROM 	ubuntu:20.04
 
 RUN \
  	apt-get update && \
- 	apt-get install -y openjdk-21-jdk && \
+ 	apt-get install -y openjdk-17-jdk && \
  	apt-get install -y maven && \
     apt-get install -y default-jdk && \
     apt-get install -y cmake && \

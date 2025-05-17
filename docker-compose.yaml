@@ -1,14 +1,21 @@
 version: "3"
 services:
   sticks-db:
-    image: mongo
-    container_name: sticks-db
+    image: postgres:13-alpine
+    container_name: tg-features-container
     environment:
-      MONGO_INITDB_ROOT_USERNAME: "root"
-      MONGO_INITDB_ROOT_PASSWORD: "root"
-      MONGO_INITDB_DATABASE: "sticks"
+      POSTGRES_DB: "tg-features"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    env_file:
+      - app.env
     ports:
-      - "27017:27017"
+      - "5435:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   sticks:
     container_name: sticks
@@ -18,14 +25,13 @@ services:
       dockerfile: Dockerfile
       args:
         APP_DIR: "app"
+    env_file:
+      - app.env
+    environment:
+      APP_JAR_PATH: ./StickKs-0.0.1.jar
+      TDLIB_PATH: /app/td/tdlib/bin/libtdjni.so
     volumes:
       - "${HOME}/.m2/repository:/root/.m2/repository"
-    environment:
-      MONGO_USER: "root"
-      MONGO_PASS: "root"
-      MONGO_DB: "sticks"
-      MONGO_PORT: "27017"
-      TDLIB_PATH: "/app/td/tdlib/bin/libtdjni.so"
     ports:
       - "8080:8080"
       - "5005:5005"
