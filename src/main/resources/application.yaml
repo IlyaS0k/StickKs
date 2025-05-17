@@ -17,6 +17,12 @@ spring:
     url: r2dbc:postgresql://localhost:5435/${POSTGRES_DB}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
+  ai:
+    deepseek:
+      chat:
+        options:
+          model: deepseek-chat
+          temperature: 0.8
 
 tdlib.config:
   use-message-database: true
