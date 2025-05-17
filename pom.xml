@@ -14,7 +14,7 @@
     <name>StickKs</name>
     <description>Spring Boot App</description>
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <kotlin.version>2.1.0</kotlin.version>
         <mainClass>ru.ilyasok.StickKs.StickKsAppKt</mainClass>
     </properties>
@@ -29,6 +29,7 @@
             <artifactId>kotlinx-coroutines-reactor</artifactId>
             <version>1.8.0</version>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
@@ -125,6 +126,15 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-debug</artifactId>
+            <version>1.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-deepseek</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -136,7 +146,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>ru.ilyasok.StickKs.StickKsApp</mainClass>
+                    <mainClass>${mainClass}</mainClass>
                 </configuration>
             </plugin>
 
@@ -161,5 +171,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
