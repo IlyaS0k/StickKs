@@ -28,16 +28,15 @@ class DefaultFetchUpdatesStrategy(
                     val meta = featureService.getMeta(updateInfo.id)
                     featuresMutex.withLock {
                         val index = features.indexOfFirst { it.id == updateInfo.id }
-                        features[index] = features[index].copy(meta = meta)
+                        if (index != -1) features[index] = features[index].copy(meta = meta)
                     }
                 }
 
                 FeatureUpdateType.CODE_UPDATED -> {
                     val updated = featureService.getById(updateInfo.id)
-                    logger.info("[***AFTER_UPDATE_NAME***]${updated.feature.name}")
                     featuresMutex.withLock {
                         val index = features.indexOfFirst { it.id == updateInfo.id }
-                        features[index] = updated
+                        if (index != -1) features[index] = updated else features.add(updated)
                     }
                     notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_UPDATED)
                 }

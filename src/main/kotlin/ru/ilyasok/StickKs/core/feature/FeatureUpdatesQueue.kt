@@ -1,12 +1,13 @@
 package ru.ilyasok.StickKs.core.feature
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -43,7 +44,7 @@ class FeatureUpdatesQueue {
     }
 
     suspend fun disableAfterTimeout(timeout: Duration) = coroutineScope {
-        launch {
+        async(CoroutineName("DisableUpdatesQueueAfterTimeoutCoro")) {
             try {
                 withTimeout(timeout) {
                     while (status.get() == AvailabilityStatus.DISABLED) {

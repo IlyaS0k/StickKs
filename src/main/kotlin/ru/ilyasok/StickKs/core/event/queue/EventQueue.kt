@@ -1,7 +1,7 @@
 package ru.ilyasok.StickKs.core.event.queue
 
 import jakarta.annotation.PostConstruct
-import jakarta.annotation.PreDestroy
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -25,27 +25,24 @@ class EventQueue(
 
     @PostConstruct
     fun postConstruct() = runBlocking {
-        CoroutineScope(Dispatchers.Default).launch {
+        CoroutineScope(Dispatchers.Default + CoroutineName("EventQueueCoro")).launch {
             loop()
         }
     }
 
-    @PreDestroy
-    fun preDestroy() {
-        queue.close()
-    }
-
     fun enqueue(e: EventContext) = runBlocking {
         queue.send(e)
-        logger.info("added new event into $e")
+        logger.info("added new event ${System.identityHashCode(e)}")
     }
 
     private suspend fun loop() = coroutineScope {
         while (true) {
             val ec = queue.receive()
-            logger.info("received event $ec")
-            launch {
+            logger.info("received event ${ec.hashCode()}")
+            try {
                 featureProcessor.process(ec)
+            } catch (_: Throwable) {
+
             }
         }
     }

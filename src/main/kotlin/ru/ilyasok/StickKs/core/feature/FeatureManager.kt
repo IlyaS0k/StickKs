@@ -1,6 +1,7 @@
 package ru.ilyasok.StickKs.core.feature
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -13,6 +14,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.dsl.Feature
+import ru.ilyasok.StickKs.dsl.feature
 import ru.ilyasok.StickKs.model.AvailabilityStatus
 import ru.ilyasok.StickKs.model.NotificationType
 import ru.ilyasok.StickKs.service.FeatureService
@@ -65,21 +67,21 @@ class FeatureManager(
     fun enable() {
         CoroutineScope(Dispatchers.Default).launch {
             if (firstEnable.compareAndSet(true, false)) {
-                launch (Dispatchers.IO) {
+                launch(Dispatchers.IO + CoroutineName("WsSessionActivityCheckCoro")) {
                     wsSessionActivityLoop()
                 }
             }
             featureUpdatesQueue.enable()
             mutex.withLock {
                 features.clear()
-                featureService.getAllStable().collect {
+                featureService.getAllCompiled().collect {
                     notificationService.notify(it.id, null, NotificationType.FEATURE_LOADED)
                     features.add(it)
                 }
             }
             fetchJobMutex.withLock {
                 if (fetchUpdatesJob == null || fetchUpdatesJob?.isActive == false) {
-                    fetchUpdatesJob = launch {
+                    fetchUpdatesJob = launch(CoroutineName("FetchUpdatesCoro")) {
                         DefaultFetchUpdatesStrategy(
                             featureUpdatesQueue = featureUpdatesQueue,
                             featuresMutex = mutex,
@@ -98,7 +100,12 @@ class FeatureManager(
     suspend fun getFeatures(): List<Feature> {
         waitWhileDisabled()
         mutex.withLock {
-            return features.toList()
+            featureService.getMetaForAll(features.map { it.id }).collect { (id, meta) ->
+                val index = features.indexOfFirst { it.id == id }
+                assert(index >= 0) { "Illegal update meta result" }
+                features[index] = features[index].copy(meta = meta)
+            }
+            return features.filter { it.isAvailable() }
         }
     }
 
@@ -115,7 +122,8 @@ class FeatureManager(
                 if (sessionManager.isInactiveFor(MAX_SESSION_INACTIVE_TIME)) {
                     disable()
                 }
-            } catch (_: Throwable) { }
+            } catch (_: Throwable) {
+            }
         }
     }
 }

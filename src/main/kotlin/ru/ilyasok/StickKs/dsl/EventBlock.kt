@@ -8,6 +8,15 @@ open class EventBlock<T: EventContext>(
     val execute: suspend (T) -> Unit,
     val contextType: KClass<T>
 ) {
+
+    @Suppress("UNCHECKED_CAST")
+    suspend fun checkCondition(eventContext: Any?): Boolean {
+        if (eventContext != null && eventContext::class == contextType) {
+            return condition.invoke(eventContext as T)
+        }
+        return false
+    }
+
     @Suppress("UNCHECKED_CAST")
     suspend fun execute(eventContext: Any?) {
         if (eventContext != null && eventContext::class == contextType) {
