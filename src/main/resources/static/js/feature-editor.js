@@ -149,8 +149,8 @@ function waitWsEvent(reqId, featureId, eventType, timeoutMs = 15000) {
     return new Promise((resolve, reject) => {
         const index = context.wsMessageBuffer.findIndex(
             msg => (eventType === null || msg.type === eventType) &&
-                    (featureId === null || msg.id === featureId) &&
-                    (reqId === null || msg.reqId === reqId)
+                (featureId === null || msg.id === featureId) &&
+                (reqId === null || msg.reqId === reqId)
         )
 
         if (index !== -1) {
@@ -270,7 +270,7 @@ async function deleteFeature() {
                 alert("Delete error: " + await deleteResponse.text());
             } else {
                 context.updateFeatureStatus(id, context.STATUS_DELETING)
-                await waitWsEvent(reqId,null, context.NOTIFICATION_FEATURE_DELETED)
+                await waitWsEvent(reqId, null, context.NOTIFICATION_FEATURE_DELETED)
                 context.deleteFeature(id)
                 if (context.currentFeature === id) {
                     createNewFeature()
@@ -279,6 +279,19 @@ async function deleteFeature() {
         }
     } catch (error) {
         alert("Delete error: " + error.message);
+    }
+}
+
+async function showErrors() {
+    const id = context.currentFeature
+    if (id === null) {
+        alert("No errors for unsaved feature")
+        return
+    }
+    try {
+        window.location.href = `http://${context.APP_ADDRESS}/features/errors?id=${id}`
+    } catch (error) {
+        alert("Failed to show errors: " + error.message);
     }
 }
 

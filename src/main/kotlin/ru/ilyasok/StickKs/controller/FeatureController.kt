@@ -12,16 +12,20 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseBody
 import ru.ilyasok.StickKs.exception.FeatureOperationException
 import ru.ilyasok.StickKs.model.DeleteFeatureRequest
+import ru.ilyasok.StickKs.model.FeatureErrorsModel
 import ru.ilyasok.StickKs.model.FeatureModel
-import ru.ilyasok.StickKs.model.FeatureStatus
 import ru.ilyasok.StickKs.model.SaveFeatureRequest
+import ru.ilyasok.StickKs.service.FeatureErrorsService
 import ru.ilyasok.StickKs.service.FeatureService
 import java.util.UUID
 
 
 @Controller
 @RequestMapping("/features")
-class FeatureController(private val featureService: FeatureService) {
+class FeatureController(
+    private val featureService: FeatureService,
+    private val featureErrorsService: FeatureErrorsService,
+) {
 
     @GetMapping
     suspend fun featureEditor(model: Model): String {
@@ -53,7 +57,22 @@ class FeatureController(private val featureService: FeatureService) {
         try {
             return featureService.delete(req.id, reqId)
         } catch (e: Exception) {
-            throw FeatureOperationException(("Failed to delete feature: " + e.message))
+            throw FeatureOperationException("Failed to delete feature: " + e.message)
+        }
+    }
+
+    @GetMapping("/errors")
+    suspend fun errors(
+        @RequestParam("id") featureId: UUID,
+        @RequestParam limit: Int = 25,
+        model: Model
+    ): String {
+        try {
+            val errors = featureErrorsService.getFeatureErrors(featureId, limit).toList()
+            model.addAttribute("errors", errors)
+            return "error-logs"
+        } catch (e: Exception) {
+            throw FeatureOperationException("Failed to get feature errors: " + e.message)
         }
     }
 

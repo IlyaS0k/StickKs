@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
@@ -13,14 +14,19 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import ru.ilyasok.StickKs.dsl.DSLDependenciesProvider
 import ru.ilyasok.StickKs.dsl.FeatureBlock
+import ru.ilyasok.StickKs.repository.IFeatureRepository
+import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.OutputStream
 import java.io.PrintStream
 import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
+import java.util.UUID
 
 @Service
-class FeatureCompilationService {
+class FeatureCompilationService(
+    private val featureErrorsService: FeatureErrorsService,
+    private val featureRepository: IFeatureRepository,
+) {
 
     companion object {
 
@@ -33,8 +39,6 @@ class FeatureCompilationService {
         private const val UNPACKED_BOOT_CLASSES = "./BOOT-INF/classes"
 
         private const val UNPACKED_BOOT_LIBS = "./BOOT-INF/lib"
-
-        private val voidOutputStream = object : OutputStream() { override fun write(b: Int) {} }
 
     }
 
@@ -52,12 +56,16 @@ class FeatureCompilationService {
 
     private val imports = DSLDependenciesProvider.provideAsString()
 
-    fun compileAsync(featureCode: String) = CoroutineScope(Dispatchers.IO).async {
-        compile(featureCode)
+    fun compileAsync(id: UUID?, featureCode: String) = CoroutineScope(Dispatchers.IO).async {
+        val isBroken = if (id != null) featureRepository.findById(id)?.isBroken else false
+        if (isBroken != true) {
+            return@async compile(id, featureCode)
+        }
+        return@async CompilationResult(success = false, error = RuntimeException("attempt to compile broken feature"), featureBlock = null)
     }
 
-    fun compile(featureCode: String): CompilationResult {
-        val threadId = Thread.currentThread().threadId()
+    fun compile(id: UUID?, featureCode: String): CompilationResult {
+        val threadId = Thread.currentThread().id
         val compilationOutputFile = "Feature${threadId}.kt"
         val classToLoad = "Feature${threadId}Kt"
         val nameSubstrToDelete = "Feature${threadId}"
@@ -78,9 +86,15 @@ class FeatureCompilationService {
                 destination = compilationOutputDir.absolutePath
                 classpath = (listOf(bootClasses) + bootLibs).joinToString(File.pathSeparator) { it.absolutePath }
             }
-            val exitCode = K2JVMCompiler().exec(PrintStream(voidOutputStream), *args.toArgumentStrings().toTypedArray())
+            val compilationOutputStream = ByteArrayOutputStream()
+            val exitCode = K2JVMCompiler().exec(PrintStream(compilationOutputStream), *args.toArgumentStrings().toTypedArray())
             if (exitCode != ExitCode.OK) {
-                return CompilationResult(success = false, error = RuntimeException(exitCode.toString()))
+                val compilationError = RuntimeException("$exitCode : $compilationOutputStream")
+                if (id != null) runBlocking {
+                    setBroken(id)
+                    featureErrorsService.updateFeatureErrors(id, compilationError.stackTraceToString())
+                }
+                return CompilationResult(success = false, error = compilationError)
             }
             val classLoader = URLClassLoader(arrayOf(compilationOutputDir.toURI().toURL()))
             val clazz = classLoader.loadClass(classToLoad)
@@ -97,6 +111,16 @@ class FeatureCompilationService {
             return CompilationResult(success = false, error = e)
         } finally {
             compilationOutputDir.listFiles()?.forEach { if (it.name.contains(nameSubstrToDelete)) it.delete() }
+        }
+    }
+
+
+    private suspend fun setBroken(featureId: UUID)  {
+        try {
+            val feature = featureRepository.findById(featureId) ?: throw RuntimeException("Feature with id $featureId not found")
+            featureRepository.save(feature.copy(isBroken = true))
+        } catch (e: Throwable) {
+            logger.error("Error while setting broken feature with if\n: $featureId", e)
         }
     }
 

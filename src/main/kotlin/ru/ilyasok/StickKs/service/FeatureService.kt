@@ -2,6 +2,7 @@ package ru.ilyasok.StickKs.service
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import org.slf4j.Logger
@@ -33,10 +34,12 @@ class FeatureService(
     private val featureUpdatesQueue: FeatureUpdatesQueue
 ) {
 
-    @Autowired @Lazy lateinit var self: FeatureService
+    @Autowired
+    @Lazy
+    lateinit var self: FeatureService
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(FeatureService::class.java)
+        val logger: Logger = LoggerFactory.getLogger(FeatureService::class.java)
     }
 
     private suspend fun <T> optimisticTry(maxAttempts: Long = Long.MAX_VALUE, block: suspend () -> T): T {
@@ -54,24 +57,24 @@ class FeatureService(
 
     suspend fun save(id: UUID?, reqId: UUID, featureCode: String): FeatureModel {
         val isUpdate = id != null
-        val compilationResult = compilationService.compile(featureCode)
+        val compilationResult = compilationService.compile(id, featureCode)
         if (!compilationResult.success) {
             throw RuntimeException("Failed to save feature: ${compilationResult.error?.toString()}")
         }
         return if (isUpdate)
             self.update(id, featureCode, compilationResult.featureBlock!!).also { f ->
-                featureUpdatesQueue.add(f.id, reqId,FeatureUpdateType.CODE_UPDATED)
+                featureUpdatesQueue.add(f.id, reqId, FeatureUpdateType.CODE_UPDATED)
             }
         else
-            self.create(featureCode,  compilationResult.featureBlock!!).also { f ->
-                featureUpdatesQueue.add(f.id, reqId,FeatureUpdateType.CREATED)
+            self.create(featureCode, compilationResult.featureBlock!!).also { f ->
+                featureUpdatesQueue.add(f.id, reqId, FeatureUpdateType.CREATED)
             }
     }
 
     @Transactional
     suspend fun delete(id: UUID, reqId: UUID) {
         if (featureRepository.existsById(id)) featureRepository.deleteById(id)
-        featureUpdatesQueue.add(id, reqId,FeatureUpdateType.DELETED)
+        featureUpdatesQueue.add(id, reqId, FeatureUpdateType.DELETED)
     }
 
 
@@ -86,6 +89,7 @@ class FeatureService(
                     featureModel.copy(
                         name = compiledFeature.name,
                         code = featureCode,
+                        createdAt = Instant.now(),
                         lastModifiedAt = Instant.now(),
                         lastFailedExecutionAt = null,
                         lastSuccessExecutionAt = null,
@@ -106,7 +110,7 @@ class FeatureService(
         return updatedFeatureModel
     }
 
-        @Transactional
+    @Transactional
     suspend fun create(featureCode: String, compiledFeature: FeatureBlock): FeatureModel {
         val id = UUID.randomUUID()
         val createdFeatureModel = try {
@@ -139,7 +143,7 @@ class FeatureService(
     suspend fun updateMeta(id: UUID, newMeta: FeatureMeta): FeatureModel {
         val feature = featureRepository.findById(id)
         requireNotNull(feature)
-        val compilationResult = compilationService.compile(feature.code)
+        val compilationResult = compilationService.compile(id, feature.code)
         if (!compilationResult.success) {
             throw RuntimeException("Failed to compile feature with id: $id")
         }
@@ -181,10 +185,26 @@ class FeatureService(
         )
     }
 
+    suspend fun getMetaForAll(ids: List<UUID>): Flow<Pair<UUID, FeatureMeta>> {
+        val features = featureRepository.findAllById(ids)
+        val meta = features.map { feature ->
+            feature.id to FeatureMeta(
+                createdAt = feature.createdAt,
+                lastModifiedAt = feature.lastModifiedAt,
+                lastSuccessExecutionAt = feature.lastSuccessExecutionAt,
+                lastFailedExecutionAt = feature.lastFailedExecutionAt,
+                successExecutionsAmount = feature.successExecutionsAmount,
+                failedExecutionsAmount = feature.failedExecutionsAmount
+            )
+        }
+
+        return meta
+    }
+
     @Transactional
     suspend fun getById(id: UUID): Feature {
         val featureModel = featureRepository.findById(id) ?: throw RuntimeException("Feature not found with id: $id")
-        val compilationResult = compilationService.compile(featureModel.code)
+        val compilationResult = compilationService.compile(id, featureModel.code)
         return if (compilationResult.success)
             featureModel.toFeature(compilationResult.featureBlock!!)
         else
@@ -198,24 +218,18 @@ class FeatureService(
     fun getAll(): Flow<FeatureModel> {
         return featureRepository.findAll()
             .map { feature ->
-                val featureCompileJob = compilationService.compileAsync(feature.code)
-                feature to featureCompileJob
-            }
-            .buffer()
-            .map { (feature, featureCompileJob) ->
-                val compilationResult = featureCompileJob.await()
-                feature.status = if (compilationResult.success)
-                    if (feature.failedExecutionsAmount == 0L) FeatureStatus.LOADING else FeatureStatus.LOADING_UNSTABLE
-                else
-                    FeatureStatus.BROKEN
+                feature.status = if (feature.isBroken) FeatureStatus.BROKEN
+                else if (feature.failedExecutionsAmount == 0L) FeatureStatus.LOADING
+                else FeatureStatus.LOADING_UNSTABLE
                 feature
             }
     }
 
-    fun getAllStable(): Flow<Feature> {
+    fun getAllCompiled(): Flow<Feature> {
         return featureRepository.findAll()
+            .filter { featureModel -> !featureModel.isBroken }
             .map { featureModel ->
-                val featureCompileJob = compilationService.compileAsync(featureModel.code)
+                val featureCompileJob = compilationService.compileAsync(featureModel.id, featureModel.code)
                 featureModel to featureCompileJob
             }
             .buffer()
@@ -227,5 +241,4 @@ class FeatureService(
                     null
             }
     }
-
 }

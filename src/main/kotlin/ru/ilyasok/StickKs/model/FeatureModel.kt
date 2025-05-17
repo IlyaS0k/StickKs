@@ -30,6 +30,8 @@ data class FeatureModel(
 
     val failedExecutionsAmount: Long = 0L,
 
+    val isBroken: Boolean = false,
+
     @Version
     val version: Long? = null,
 
