@@ -28,6 +28,10 @@ interface ITgClient {
 
     suspend fun checkAuthenticationCode(code: String): TdQueryResult<TdApi.Ok?, TdApi.Error>
 
+    suspend fun sendMessage(chatId: Long, text: String): TdQueryResult<TdApi.Message?, TdApi.Error>
+
+    suspend fun deleteMessage(chatId: Long, messageIds: LongArray, revoke: Boolean): TdQueryResult<TdApi.Ok?, TdApi.Error>
+
     suspend fun <R, E> sendWithCallback(
         query: TdApi.Function<*>, queryHandler: ITdQuery<R, E>
     ): TdQueryResult<R, E>

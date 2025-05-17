@@ -59,6 +59,28 @@ class TgClient @Autowired constructor(
     override suspend fun checkAuthenticationCode(code: String): TdQueryResult<TdApi.Ok?, TdApi.Error> =
         sendWithCallback(TdApi.CheckAuthenticationCode(code))
 
+    override suspend fun sendMessage(chatId: Long, text: String): TdQueryResult<TdApi.Message?, TdApi.Error> =
+        sendWithCallback(
+            TdApi.SendMessage(
+                chatId,
+                0L,
+                null,
+                null,
+                null,
+                TdApi.InputMessageText(
+                    TdApi.FormattedText(text, null),
+                    null,
+                    true
+                )
+            )
+        )
+
+    override suspend fun deleteMessage(
+        chatId: Long,
+        messageIds: LongArray,
+        revoke: Boolean
+    ): TdQueryResult<TdApi.Ok?, TdApi.Error> = sendWithCallback(TdApi.DeleteMessages(chatId, messageIds, revoke))
+
     override fun send(query: TdApi.Function<*>) {
         adapteeClient!!.send(query, mainHandler)
     }

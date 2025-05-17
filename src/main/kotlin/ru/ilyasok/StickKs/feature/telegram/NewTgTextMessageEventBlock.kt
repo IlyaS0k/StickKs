@@ -1,4 +1,4 @@
-package ru.ilyasok.StickKs.tdapi.feature
+package ru.ilyasok.StickKs.feature.telegram
 
 import ru.ilyasok.StickKs.dsl.EventBlock
 import ru.ilyasok.StickKs.dsl.EventBlockBuilder

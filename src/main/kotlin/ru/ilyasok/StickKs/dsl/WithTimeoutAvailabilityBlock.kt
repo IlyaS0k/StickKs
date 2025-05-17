@@ -12,7 +12,7 @@ class WithTimeoutAvailabilityBlock(
 
     override fun isAvailable(meta: FeatureMeta): Boolean {
         val now = Instant.now()
-        if (limit <= 0) return false
+        if (limit <= meta.successExecutionsAmount) return false
         if (timeout != null &&
             meta.lastSuccessExecutionAt != null &&
             meta.lastSuccessExecutionAt.plus(timeout.toJavaDuration()).isAfter(now)
@@ -25,14 +25,13 @@ class WithTimeoutAvailabilityBlock(
 }
 
 class WithTimeoutAvailabilityBlockBuilder {
-    var afterStart: Duration? = null
-    var timeout: Duration? = null
+    var afterStart: Duration = Duration.ZERO
+    var timeout: Duration = Duration.ZERO
     var limit: Int = Int.MAX_VALUE
 
     fun build(): WithTimeoutAvailabilityBlock {
         require(limit > 0) { "limit is not greater than 0" }
-        require((timeout == null && limit == 1) || timeout != null) { "action block is not initialized correctly" }
-        return WithTimeoutAvailabilityBlock(afterStart = afterStart ?: Duration.ZERO, timeout = timeout, limit = limit)
+        return WithTimeoutAvailabilityBlock(afterStart = afterStart, timeout = timeout, limit = limit)
     }
 }
 
