@@ -1,5 +1,6 @@
 package ru.ilyasok.StickKs.config
 
+import io.kotest.core.spec.style.StringSpec
 import io.mockk.mockk
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -22,4 +23,7 @@ class TestTgConfiguration {
     fun getTgFunctions(): TgFunctions {
         return TgFunctions(getTgClient())
     }
+
+    @Bean
+    fun getDefault(): StringSpec.() -> Unit = {}
 }
