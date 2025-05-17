@@ -38,10 +38,6 @@ class FeatureCompilationService(
 
         private const val OUTPUT_DIR_NAME = "feature-compilation-output"
 
-        private const val UNPACKED_BOOT_CLASSES = "./BOOT-INF/classes"
-
-        private const val UNPACKED_BOOT_LIBS = "./BOOT-INF/lib"
-
     }
 
     data class CompilationResult(
@@ -81,12 +77,10 @@ class FeatureCompilationService(
                 )
             val additionalPath = PathUtil.getJdkClassesRootsFromCurrentJre()
             val sourceFile = File(compilationOutputDir, compilationOutputFile).apply { writeText(source) }
-            val bootClasses = File(UNPACKED_BOOT_CLASSES)
-            val bootLibs = File(UNPACKED_BOOT_LIBS).listFiles()?.toList() ?: emptyList()
             val args = K2JVMCompilerArguments().apply {
                 freeArgs = listOf(sourceFile.absolutePath)
                 destination = compilationOutputDir.absolutePath
-                classpath = (listOf(bootClasses) + bootLibs + additionalPath).joinToString(File.pathSeparator) { it.absolutePath } + File.pathSeparator + System.getProperty("java.class.path")
+                classpath = additionalPath.joinToString(File.pathSeparator) { it.absolutePath } + File.pathSeparator + System.getProperty("java.class.path")
             }
             val compilationOutputStream = ByteArrayOutputStream()
             val exitCode = K2JVMCompiler().exec(PrintStream(compilationOutputStream), *args.toArgumentStrings().toTypedArray())
