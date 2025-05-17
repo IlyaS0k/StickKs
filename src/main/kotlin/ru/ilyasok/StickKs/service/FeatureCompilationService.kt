@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.utils.PathUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import ru.ilyasok.StickKs.dsl.DSLDependenciesProvider
+import ru.ilyasok.StickKs.core.utils.DSLDependenciesProvider
 import ru.ilyasok.StickKs.dsl.FeatureBlock
 import ru.ilyasok.StickKs.repository.IFeatureRepository
 import java.io.ByteArrayOutputStream
@@ -27,6 +27,7 @@ import java.util.UUID
 class FeatureCompilationService(
     private val featureErrorsService: FeatureErrorsService,
     private val featureRepository: IFeatureRepository,
+    private val dslDependenciesProvider: DSLDependenciesProvider
 ) {
 
     companion object {
@@ -55,7 +56,7 @@ class FeatureCompilationService(
 
     private var compilationOutputDir: File = File(OUTPUT_DIR_NAME).apply { mkdirs() }
 
-    private val imports = DSLDependenciesProvider.provideAsString()
+    private val imports = dslDependenciesProvider.provideAsString()
 
     fun compileAsync(id: UUID?, featureCode: String) = CoroutineScope(Dispatchers.IO).async {
         val isBroken = if (id != null) featureRepository.findById(id)?.isBroken else false
