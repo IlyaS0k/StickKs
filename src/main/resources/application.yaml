@@ -5,7 +5,7 @@ spring:
     prefix: classpath:/templates/
     suffix: .html
   flyway:
-    url: jdbc:postgresql://localhost:5435/${POSTGRES_DB}
+    url: ${JDBC_URL}
     user: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -14,7 +14,7 @@ spring:
     validate-on-migrate: true
     locations: classpath:db/migration
   r2dbc:
-    url: r2dbc:postgresql://localhost:5435/${POSTGRES_DB}
+    url: ${R2DBC_URL}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   ai:
