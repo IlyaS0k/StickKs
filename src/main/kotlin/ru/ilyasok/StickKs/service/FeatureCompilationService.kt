@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.compilerRunner.toArgumentStrings
+import org.jetbrains.kotlin.utils.PathUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -77,14 +78,14 @@ class FeatureCompilationService(
                         Regex("""feature\s*\{"""), "fun $COMPILED_METHOD_NAME() = feature {"
                     )
                 )
-
+            val additionalPath = PathUtil.getJdkClassesRootsFromCurrentJre()
             val sourceFile = File(compilationOutputDir, compilationOutputFile).apply { writeText(source) }
             val bootClasses = File(UNPACKED_BOOT_CLASSES)
-            val bootLibs = File(UNPACKED_BOOT_LIBS).listFiles()!!.toList()
+            val bootLibs = File(UNPACKED_BOOT_LIBS).listFiles()?.toList() ?: emptyList()
             val args = K2JVMCompilerArguments().apply {
                 freeArgs = listOf(sourceFile.absolutePath)
                 destination = compilationOutputDir.absolutePath
-                classpath = (listOf(bootClasses) + bootLibs).joinToString(File.pathSeparator) { it.absolutePath }
+                classpath = (listOf(bootClasses) + bootLibs + additionalPath).joinToString(File.pathSeparator) { it.absolutePath } + File.pathSeparator + System.getProperty("java.class.path")
             }
             val compilationOutputStream = ByteArrayOutputStream()
             val exitCode = K2JVMCompiler().exec(PrintStream(compilationOutputStream), *args.toArgumentStrings().toTypedArray())
