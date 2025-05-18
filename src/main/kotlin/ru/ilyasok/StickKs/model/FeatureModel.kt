@@ -30,36 +30,35 @@ data class FeatureModel(
 
     val failedExecutionsAmount: Long = 0L,
 
-    val isBroken: Boolean = false,
+    val status: FeatureStatus,
+
+    val disabled: Boolean = false,
 
     @Version
     val version: Long? = null,
 
-) {
-    @org.springframework.data.annotation.Transient
-    var status: FeatureStatus? = FeatureStatus.STABLE
-}
+)
+
 
 enum class FeatureStatus {
     STABLE,
     UNSTABLE,
-    UPDATING,
-    CREATING,
-    BROKEN,
-    LOADING,
-    LOADING_UNSTABLE,
+    BROKEN
 }
 
 fun FeatureModel.toFeature(featureBlock: FeatureBlock) = Feature(
     id = this.id,
     version = this.version!!,
     feature = featureBlock,
-    meta = FeatureMeta(
-        createdAt = this.createdAt,
-        lastModifiedAt = this.lastModifiedAt,
-        lastSuccessExecutionAt = this.lastSuccessExecutionAt,
-        lastFailedExecutionAt = this.lastFailedExecutionAt,
-        successExecutionsAmount = this.successExecutionsAmount,
-        failedExecutionsAmount = this.failedExecutionsAmount
-    ),
+    meta = this.toFeatureMeta()
+)
+
+fun FeatureModel.toFeatureMeta() = FeatureMeta(
+    createdAt = this.createdAt,
+    lastModifiedAt = this.lastModifiedAt,
+    lastSuccessExecutionAt = this.lastSuccessExecutionAt,
+    lastFailedExecutionAt = this.lastFailedExecutionAt,
+    successExecutionsAmount = this.successExecutionsAmount,
+    failedExecutionsAmount = this.failedExecutionsAmount,
+    status = this.status
 )

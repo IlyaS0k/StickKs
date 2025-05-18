@@ -1,5 +1,6 @@
 package ru.ilyasok.StickKs.dsl
 
+import ru.ilyasok.StickKs.model.FeatureStatus
 import java.time.Instant
 import java.util.UUID
 
@@ -13,6 +14,7 @@ data class Feature(
 }
 
 data class FeatureMeta(
+    val status: FeatureStatus,
     val createdAt: Instant,
     val lastModifiedAt: Instant,
     val lastSuccessExecutionAt: Instant?,

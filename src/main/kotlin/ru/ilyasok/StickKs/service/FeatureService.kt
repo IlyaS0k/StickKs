@@ -81,7 +81,8 @@ class FeatureService(
                         lastSuccessExecutionAt = null,
                         successExecutionsAmount = 0L,
                         failedExecutionsAmount = 0L,
-                        isBroken = false
+                        status = FeatureStatus.STABLE,
+                        disabled = false
                     )
                 ).also {
                     logger.info("Successfully update feature with id: $id")
@@ -92,7 +93,6 @@ class FeatureService(
             logger.error(message, e)
             throw RuntimeException(message, e)
         }
-        updatedFeatureModel.status = FeatureStatus.UPDATING
 
         return updatedFeatureModel
     }
@@ -111,7 +111,8 @@ class FeatureService(
                         lastModifiedAt = Instant.now(),
                         successExecutionsAmount = 0L,
                         failedExecutionsAmount = 0L,
-                        isBroken = false
+                        status = FeatureStatus.STABLE,
+                        disabled = false,
                     )
                 ).also {
                     logger.info("Successfully created feature with id: $id")
@@ -122,7 +123,6 @@ class FeatureService(
             logger.error(message, e)
             throw RuntimeException(message, e)
         }
-        createdFeatureModel.status = FeatureStatus.CREATING
 
         return createdFeatureModel
     }
@@ -163,27 +163,13 @@ class FeatureService(
     suspend fun getMeta(id: UUID): FeatureMeta {
         val feature = featureRepository.findById(id) ?: throw RuntimeException("Feature not found with id: $id")
 
-        return FeatureMeta(
-            createdAt = feature.createdAt,
-            lastModifiedAt = feature.lastModifiedAt,
-            lastSuccessExecutionAt = feature.lastSuccessExecutionAt,
-            lastFailedExecutionAt = feature.lastFailedExecutionAt,
-            successExecutionsAmount = feature.successExecutionsAmount,
-            failedExecutionsAmount = feature.failedExecutionsAmount
-        )
+        return feature.toFeatureMeta()
     }
 
     suspend fun getMetaForAll(ids: List<UUID>): Flow<Pair<UUID, FeatureMeta>> {
         val features = featureRepository.findAllById(ids)
         val meta = features.map { feature ->
-            feature.id to FeatureMeta(
-                createdAt = feature.createdAt,
-                lastModifiedAt = feature.lastModifiedAt,
-                lastSuccessExecutionAt = feature.lastSuccessExecutionAt,
-                lastFailedExecutionAt = feature.lastFailedExecutionAt,
-                successExecutionsAmount = feature.successExecutionsAmount,
-                failedExecutionsAmount = feature.failedExecutionsAmount
-            )
+            feature.id to feature.toFeatureMeta()
         }
 
         return meta
@@ -205,17 +191,11 @@ class FeatureService(
 
     fun getAll(): Flow<FeatureModel> {
         return featureRepository.findAll()
-            .map { feature ->
-                feature.status = if (feature.isBroken) FeatureStatus.BROKEN
-                else if (feature.failedExecutionsAmount == 0L) FeatureStatus.LOADING
-                else FeatureStatus.LOADING_UNSTABLE
-                feature
-            }
     }
 
     fun getAllCompiled(): Flow<Feature> {
         return featureRepository.findAll()
-            .filter { featureModel -> !featureModel.isBroken }
+            .filter { featureModel -> featureModel.status != FeatureStatus.BROKEN }
             .map { featureModel ->
                 val featureCompileJob = compilationService.compileAsync(featureModel.id, featureModel.code)
                 featureModel to featureCompileJob

@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.core.feature.FeatureManager
 import ru.ilyasok.StickKs.core.context.EventContext
+import ru.ilyasok.StickKs.model.FeatureStatus
 import ru.ilyasok.StickKs.model.NotificationType
 import ru.ilyasok.StickKs.service.FeatureErrorsService
 import ru.ilyasok.StickKs.service.FeatureService
@@ -41,6 +42,7 @@ class FeatureProcessor(
             } catch (e: Throwable) {
                 logger.warn("failed to process feature $feature", e)
                 updatedMeta = feature.meta.copy(
+                    status = FeatureStatus.UNSTABLE,
                     lastFailedExecutionAt = Instant.now(),
                     failedExecutionsAmount = feature.meta.failedExecutionsAmount + 1
                 )

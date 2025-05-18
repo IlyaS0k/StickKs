@@ -10,7 +10,6 @@ class FeaturesContext {
     STATUS_UNSTABLE = "UNSTABLE"
     STATUS_BROKEN = "BROKEN"
     STATUS_LOADING = "LOADING"
-    STATUS_LOADING_UNSTABLE = "LOADING_UNSTABLE"
     STATUS_CREATING = "CREATING"
     STATUS_UPDATING = "UPDATING"
     STATUS_DELETING = "DELETING"
@@ -127,11 +126,13 @@ async function initialization() {
     ws.addEventListener("close", () => {
         console.error("WebSocket closed")
     })
-    for (const f of context.features.filter(f => f.status === context.STATUS_LOADING || f.status === context.STATUS_LOADING_UNSTABLE)) {
+    for (const f of context.features) {
+        const prevStatus = f.status
+        context.updateFeatureStatus(f.id, context.STATUS_LOADING)
         waitWsEvent(null, f.id, context.NOTIFICATION_FEATURE_LOADED)
             .then(() => {
-                if (f.status === context.STATUS_LOADING || f.status === context.STATUS_LOADING_UNSTABLE) {
-                    context.updateFeatureStatus(f.id, f.status === context.STATUS_LOADING ? context.STATUS_STABLE : context.STATUS_UNSTABLE)
+                if (f.status === context.STATUS_LOADING) {
+                    context.updateFeatureStatus(f.id, prevStatus)
                 }
             })
             .catch((e) => {
@@ -231,7 +232,6 @@ function createFeature(f) {
             div.style.color = "orange"
             break
         case context.STATUS_LOADING:
-        case context.STATUS_LOADING_UNSTABLE:
         case context.STATUS_CREATING:
         case context.STATUS_UPDATING:
         case context.STATUS_DELETING:
@@ -257,8 +257,9 @@ async function deleteFeature() {
     }
     try {
         if (confirm("Are you sure you want delete this feature?")) {
+            context.updateFeatureStatus(id, context.STATUS_DELETING)
             const reqId = crypto.randomUUID()
-            const deleteResponse = await fetch(`http://${context.APP_ADDRESS}/features/delete/${id}`, {
+            const deleteResponse = await fetch(`http://${context.APP_ADDRESS}/features/delete?id=${id}`, {
                 method: "POST",
                 headers: {
                     "Content-type": "application/json; charset=utf-8",
@@ -269,7 +270,6 @@ async function deleteFeature() {
             if (!deleteResponse.ok) {
                 alert("Delete error: " + await deleteResponse.text());
             } else {
-                context.updateFeatureStatus(id, context.STATUS_DELETING)
                 await waitWsEvent(reqId, null, context.NOTIFICATION_FEATURE_DELETED)
                 context.deleteFeature(id)
                 if (context.currentFeature === id) {
@@ -305,6 +305,9 @@ async function saveFeature() {
         return
     }
     try {
+        if (!isNewFeature) {
+            context.updateFeatureStatus(featureToSaveId, context.STATUS_UPDATING)
+        }
         let reqId = crypto.randomUUID()
         const response = await fetch(`http://${context.APP_ADDRESS}/features/save`, {
             method: "POST",
@@ -324,6 +327,7 @@ async function saveFeature() {
         } else {
             const feature = await response.json()
             if (isNewFeature) {
+                feature.status = context.STATUS_CREATING
                 context.addFeature(feature)
                 if (context.currentFeature == null && oldnewFeatureSelections === context.newFeatureSelections) {
                     context.currentFeature = feature.id

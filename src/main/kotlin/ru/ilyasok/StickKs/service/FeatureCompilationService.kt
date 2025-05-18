@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import ru.ilyasok.StickKs.core.utils.DSLDependenciesProvider
 import ru.ilyasok.StickKs.dsl.FeatureBlock
+import ru.ilyasok.StickKs.model.FeatureStatus
 import ru.ilyasok.StickKs.repository.IFeatureRepository
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -55,8 +56,8 @@ class FeatureCompilationService(
     private val imports = dslDependenciesProvider.provideAsString()
 
     fun compileAsync(id: UUID?, featureCode: String) = CoroutineScope(Dispatchers.IO).async {
-        val isBroken = if (id != null) featureRepository.findById(id)?.isBroken else false
-        if (isBroken != true) {
+        val isBroken = if (id != null) featureRepository.findById(id)?.status == FeatureStatus.BROKEN else false
+        if (!isBroken) {
             return@async compile(id, featureCode)
         }
         return@async CompilationResult(success = false, error = RuntimeException("attempt to compile broken feature"), featureBlock = null)
@@ -115,7 +116,7 @@ class FeatureCompilationService(
         try {
             val feature = featureRepository.findById(featureId) ?: throw RuntimeException("Feature with id $featureId not found")
             optimisticTry(10) {
-                featureRepository.save(feature.copy(isBroken = true))
+                featureRepository.save(feature.copy(status = FeatureStatus.BROKEN))
             }
         } catch (e: Throwable) {
             logger.error("Error while setting broken feature with if\n: $featureId", e)
