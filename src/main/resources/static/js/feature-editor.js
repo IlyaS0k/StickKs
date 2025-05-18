@@ -130,10 +130,12 @@ async function initialization() {
     for (const f of context.features.filter(f => f.status === context.STATUS_LOADING || f.status === context.STATUS_LOADING_UNSTABLE)) {
         waitWsEvent(null, f.id, context.NOTIFICATION_FEATURE_LOADED)
             .then(() => {
-                context.updateFeatureStatus(f.id, f.status === context.STATUS_LOADING ? context.STATUS_STABLE : context.STATUS_UNSTABLE)
+                if (f.status === context.STATUS_LOADING || f.status === context.STATUS_LOADING_UNSTABLE) {
+                    context.updateFeatureStatus(f.id, f.status === context.STATUS_LOADING ? context.STATUS_STABLE : context.STATUS_UNSTABLE)
+                }
             })
             .catch((e) => {
-                console.warn(`Timeout or error for feature ${f.id}:`, e);
+                console.warn(`Timeout for loading feature ${f.id}:`, e);
             });
     }
 }
@@ -327,11 +329,15 @@ async function saveFeature() {
                     context.currentFeature = feature.id
                 }
                 await waitWsEvent(reqId, null, context.NOTIFICATION_FEATURE_CREATED)
-                context.updateFeatureStatus(feature.id, context.STATUS_STABLE)
+                if (feature.status === context.STATUS_CREATING) {
+                    context.updateFeatureStatus(feature.id, context.STATUS_STABLE)
+                }
             } else {
                 context.updateFeature(feature)
                 await waitWsEvent(reqId, null, context.NOTIFICATION_FEATURE_UPDATED)
-                context.updateFeatureStatus(feature.id, context.STATUS_STABLE)
+                if (feature.status === context.STATUS_UPDATING) {
+                    context.updateFeatureStatus(feature.id, context.STATUS_STABLE)
+                }
             }
             alert("Saved")
         }
