@@ -125,8 +125,7 @@ async function initialization() {
         console.log("WebSocket connection established")
     })
     ws.addEventListener("close", () => {
-        window.location.href = "/error"
-        throw new Error("WebSocket closed")
+        console.error("WebSocket closed")
     })
     for (const f of context.features.filter(f => f.status === context.STATUS_LOADING || f.status === context.STATUS_LOADING_UNSTABLE)) {
         waitWsEvent(null, f.id, context.NOTIFICATION_FEATURE_LOADED)
