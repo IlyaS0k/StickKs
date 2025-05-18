@@ -75,12 +75,12 @@ class FeatureCompilationService(
                         Regex("""feature\s*\{"""), "fun $COMPILED_METHOD_NAME() = feature {"
                     )
                 )
-            val additionalPath = PathUtil.getJdkClassesRootsFromCurrentJre()
+
             val sourceFile = File(compilationOutputDir, compilationOutputFile).apply { writeText(source) }
             val args = K2JVMCompilerArguments().apply {
                 freeArgs = listOf(sourceFile.absolutePath)
                 destination = compilationOutputDir.absolutePath
-                classpath = additionalPath.joinToString(File.pathSeparator) { it.absolutePath } + File.pathSeparator + System.getProperty("java.class.path")
+                classpath = System.getProperty("java.class.path")
             }
             val compilationOutputStream = ByteArrayOutputStream()
             val exitCode = K2JVMCompiler().exec(PrintStream(compilationOutputStream), *args.toArgumentStrings().toTypedArray())

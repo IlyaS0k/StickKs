@@ -16,6 +16,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - sticks-net
 
   sticks:
     container_name: sticks
@@ -28,12 +30,19 @@ services:
     env_file:
       - app.env
     environment:
-      APP_JAR_PATH: ./StickKs-0.0.1.jar
-      TDLIB_PATH: /app/td/tdlib/bin/libtdjni.so
-    volumes:
-      - "${HOME}/.m2/repository:/root/.m2/repository"
+      TDLIB_PATH: "/app/libs/libtdjni.so"
+      POSTGRES_DB: "tg-features"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      JDBC_URL: "jdbc:postgresql://sticks-db:5432/tg-features"
+      R2DBC_URL: "r2dbc:postgresql://sticks-db:5432/tg-features"
     ports:
       - "8080:8080"
       - "5005:5005"
     depends_on:
       - sticks-db
+    networks:
+      - sticks-net
+
+networks:
+  sticks-net:

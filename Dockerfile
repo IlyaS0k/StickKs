@@ -1,29 +1,33 @@
-FROM 	ubuntu:20.04
+FROM maven:3.9.3-eclipse-temurin-20-alpine as builder
 
-RUN \
- 	apt-get update && \
- 	apt-get install -y openjdk-17-jdk && \
- 	apt-get install -y maven && \
-    apt-get install -y default-jdk && \
-    apt-get install -y cmake && \
-    apt-get install -y make && \
-    apt-get install -y git && \
-    apt-get install -y zlib1g-dev && \
-    apt-get install -y libssl-dev && \
-    apt-get install -y gperf && \
-    apt-get install -y php-cli && \
-    apt-get install -y g++
+WORKDIR /app
 
-VOLUME /root/.m2/repository
+COPY . .
 
-ARG APP_DIR
+RUN mvn package -Dmaven.test.skip=true
 
-ENV STICKS_DIR=$APP_DIR
+FROM ubuntu:22.04
 
-WORKDIR $STICKS_DIR
+RUN apt-get update
 
-COPY 	. .
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN /$STICKS_DIR/tdlib-install.sh
+RUN apt-get update && apt-get -y --no-install-recommends install \
+   wget unzip
 
-ENTRYPOINT	["mvn", "spring-boot:run"]
+RUN apt-get install -y make git zlib1g-dev libssl-dev gperf php-cli cmake default-jdk g++ openjdk-17-jre
+
+WORKDIR /app
+
+COPY --from=builder /app/target/ ./target/
+
+COPY --from=builder /app/libs/libtdjni.so ./libs/libtdjni.so
+
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'mv ./target/StickKs-0.0.1.jar ./StickKs.jar' >> /app/start.sh && \
+    echo 'jar -xf ./StickKs.jar' >> /app/start.sh && \
+    echo 'CLASS_PATH=$(find /app/BOOT-INF/lib -name "*.jar" | paste -sd:)' >> /app/start.sh && \
+    echo 'java -cp "/app/target/classes:$CLASS_PATH" ru.ilyasok.StickKs.StickKsAppKt' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+ENTRYPOINT ["/app/start.sh"]
