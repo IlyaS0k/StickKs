@@ -258,7 +258,6 @@ async function deleteFeature() {
             const reqId = crypto.randomUUID()
             const deleteResponse = await fetch(`http://${context.APP_ADDRESS}/features/delete/${id}`, {
                 method: "POST",
-                body: JSON.stringify({id}),
                 headers: {
                     "Content-type": "application/json; charset=utf-8",
                     "X-Request-ID": reqId
