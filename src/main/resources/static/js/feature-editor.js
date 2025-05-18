@@ -127,6 +127,7 @@ async function initialization() {
         console.error("WebSocket closed")
     })
     for (const f of context.features) {
+        if (f.status === context.STATUS_BROKEN) continue
         const prevStatus = f.status
         context.updateFeatureStatus(f.id, context.STATUS_LOADING)
         waitWsEvent(null, f.id, context.NOTIFICATION_FEATURE_LOADED)
@@ -251,12 +252,14 @@ function loadFeature(id) {
 
 async function deleteFeature() {
     const id = context.currentFeature
+    let prevStatus
     if (id === null) {
         alert("Attempt to delete unsaved feature")
         return
     }
     try {
         if (confirm("Are you sure you want delete this feature?")) {
+            prevStatus = context.features.find(f => f.id === id).status
             context.updateFeatureStatus(id, context.STATUS_DELETING)
             const reqId = crypto.randomUUID()
             const deleteResponse = await fetch(`http://${context.APP_ADDRESS}/features/delete?id=${id}`, {
@@ -279,6 +282,11 @@ async function deleteFeature() {
         }
     } catch (error) {
         alert("Delete error: " + error.message);
+    } finally {
+        const curStatus = context.features.find(f => f.id === id).status
+        if (curStatus === context.STATUS_DELETING) {
+            context.updateFeatureStatus(id, prevStatus)
+        }
     }
 }
 
@@ -300,12 +308,14 @@ async function saveFeature() {
     let isNewFeature = featureToSaveId == null
     let oldnewFeatureSelections = context.newFeatureSelections
     const code = monacoEditor.getValue()
+    let prevStatus
     if (!code) {
         alert("Code is empty!")
         return
     }
     try {
         if (!isNewFeature) {
+            prevStatus = context.features.find(f => f.id === featureToSaveId).status
             context.updateFeatureStatus(featureToSaveId, context.STATUS_UPDATING)
         }
         let reqId = crypto.randomUUID()
@@ -347,6 +357,11 @@ async function saveFeature() {
         }
     } catch (error) {
         alert("Error: " + error.message)
+    } finally {
+        const curStatus = context.features.find(f => f.id === featureToSaveId).status
+        if (!isNewFeature && curStatus === context.STATUS_UPDATING) {
+            context.updateFeatureStatus(featureToSaveId, prevStatus)
+        }
     }
 }
 
