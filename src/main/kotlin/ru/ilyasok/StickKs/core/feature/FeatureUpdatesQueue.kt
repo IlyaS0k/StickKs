@@ -46,6 +46,7 @@ class FeatureUpdatesQueue {
     suspend fun disableAfterTimeout(timeout: Duration) = coroutineScope {
         async(CoroutineName("DisableUpdatesQueueAfterTimeoutCoro")) {
             try {
+                logger.info("Disabling updates after timeout $timeout")
                 withTimeout(timeout) {
                     while (status.get() == AvailabilityStatus.DISABLED) {
                         statusChangedEvent.await()
@@ -53,9 +54,9 @@ class FeatureUpdatesQueue {
                 }
             } catch (_: TimeoutCancellationException) {
                 status.set(AvailabilityStatus.DISABLED)
-                logger.debug("Disabled updates queue job timeout exceeded")
+                logger.debug("Disabled updates queue job timeout exceeded: updates queue is disabled")
             } catch (_: CancellationException) {
-                logger.debug("Cancelled disable updates queue job")
+                logger.debug("Cancelled disable updates queue job: updates queue is enabled")
             }
         }
     }

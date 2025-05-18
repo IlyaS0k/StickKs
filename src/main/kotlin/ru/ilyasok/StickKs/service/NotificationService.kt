@@ -26,7 +26,7 @@ class NotificationService(
             val message = block(session)
             logger.info("Send notification message : $message")
         } else {
-            throw RuntimeException("Session is not available")
+            logger.info("Session is not available")
         }
     }
 
