@@ -52,10 +52,10 @@ class FeatureController(
     @ResponseBody
     suspend fun delete(
         @RequestHeader("X-Request-ID") reqId: UUID,
-        @RequestBody req: DeleteFeatureRequest
+        @RequestParam("id") featureId: UUID
     ) {
         try {
-            return featureService.delete(req.id, reqId)
+            return featureService.delete(featureId, reqId)
         } catch (e: Exception) {
             throw FeatureOperationException("Failed to delete feature: " + e.message)
         }

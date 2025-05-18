@@ -257,7 +257,7 @@ async function deleteFeature() {
     try {
         if (confirm("Are you sure you want delete this feature?")) {
             const reqId = crypto.randomUUID()
-            const deleteResponse = await fetch(`http://${context.APP_ADDRESS}/features/delete`, {
+            const deleteResponse = await fetch(`http://${context.APP_ADDRESS}/features/delete/${id}`, {
                 method: "POST",
                 body: JSON.stringify({id}),
                 headers: {
