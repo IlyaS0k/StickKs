@@ -5,6 +5,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.tdapi.Client
@@ -22,7 +23,11 @@ import ru.ilyasok.StickKs.tdapi.model.response.TdQueryResult
 
 @Component
 @Profile("!test")
-class TgClient @Autowired constructor(override val mainHandler: ITdMainHandler) : ITgClient {
+class TgClient(
+    override val mainHandler: ITdMainHandler,
+    @param:Value("\${tdlib.config.log-verbosity-level}")
+    private val logVerbosityLevel: Int
+) : ITgClient {
 
     private var adapteeClient: Client? = null
 
@@ -123,7 +128,7 @@ class TgClient @Autowired constructor(override val mainHandler: ITdMainHandler) 
     }
 
     override fun initializeClient() {
-        val logVerbosityLevel = TdApi.SetLogVerbosityLevel(0)
+        val logVerbosityLevel = TdApi.SetLogVerbosityLevel(logVerbosityLevel)
         Client.execute(logVerbosityLevel)
         adapteeClient = Client.create(mainHandler, null, null)
     }
