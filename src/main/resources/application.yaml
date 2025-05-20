@@ -33,6 +33,7 @@ tdlib.config:
   system-language-code: en
   device-model: Desktop
   application-version: 1.0
+  log-verbosity-level: 0
 
 logging:
   level:
