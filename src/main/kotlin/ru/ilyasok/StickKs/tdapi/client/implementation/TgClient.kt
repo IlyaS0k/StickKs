@@ -22,10 +22,7 @@ import ru.ilyasok.StickKs.tdapi.model.response.TdQueryResult
 
 @Component
 @Profile("!test")
-class TgClient @Autowired constructor(
-    override val mainHandler: ITdMainHandler,
-    override val tgClientParams: TgClientParams
-) : ITgClient {
+class TgClient @Autowired constructor(override val mainHandler: ITdMainHandler) : ITgClient {
 
     private var adapteeClient: Client? = null
 

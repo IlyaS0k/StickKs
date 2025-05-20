@@ -10,7 +10,6 @@ import ru.ilyasok.StickKs.tdapi.model.response.TdQueryResult
 
 interface ITgClient {
     val mainHandler: ITdMainHandler
-    val tgClientParams: TgClientParams
 
     fun send(query: TdApi.Function<*>)
 
