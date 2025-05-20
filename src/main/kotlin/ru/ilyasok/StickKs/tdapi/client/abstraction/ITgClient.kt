@@ -1,9 +1,7 @@
 package ru.ilyasok.StickKs.tdapi.client.abstraction
 
-import ru.ilyasok.StickKs.tdapi.Client
 import ru.ilyasok.StickKs.tdapi.TdApi
 import ru.ilyasok.StickKs.tdapi.client.TgClientAuthorizationState
-import ru.ilyasok.StickKs.tdapi.client.TgClientParams
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdMainHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQuery
 import ru.ilyasok.StickKs.tdapi.model.response.TdQueryResult

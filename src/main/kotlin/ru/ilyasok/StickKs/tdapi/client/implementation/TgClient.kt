@@ -29,7 +29,7 @@ class TgClient(
     private val logVerbosityLevel: Int
 ) : ITgClient {
 
-    private var adapteeClient: Client? = null
+    private var nativeClient: Client? = null
 
     @PostConstruct
     fun postConstruct() {
@@ -86,7 +86,7 @@ class TgClient(
     ): TdQueryResult<TdApi.Ok?, TdApi.Error> = sendWithCallback(TdApi.DeleteMessages(chatId, messageIds, revoke))
 
     override fun send(query: TdApi.Function<*>) {
-        adapteeClient!!.send(query, mainHandler)
+        nativeClient!!.send(query, mainHandler)
     }
 
     override suspend fun getMe(): TdQueryResult<TdApi.User?, TdApi.Error> =
@@ -100,7 +100,7 @@ class TgClient(
         queryHandler: ITdQuery<R, E>
     ): TdQueryResult<R, E> = coroutineScope {
         val channel = Channel<TdQueryResult<R, E>>()
-        adapteeClient!!.send(query) { tdobj ->
+        nativeClient!!.send(query) { tdobj ->
             launch {
                 if (tdobj is TdApi.Error) {
                     channel.send(TdQueryResult.error(queryHandler.onError(tdobj)))
@@ -130,7 +130,7 @@ class TgClient(
     override fun initializeClient() {
         val logVerbosityLevel = TdApi.SetLogVerbosityLevel(logVerbosityLevel)
         Client.execute(logVerbosityLevel)
-        adapteeClient = Client.create(mainHandler, null, null)
+        nativeClient = Client.create(mainHandler, null, null)
     }
 
 }
