@@ -1,9 +1,11 @@
 package ru.ilyasok.StickKs.tdapi.client.implementation
 
 import jakarta.annotation.PostConstruct
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
@@ -99,20 +101,20 @@ class TgClient(
         query: TdApi.Function<*>,
         queryHandler: ITdQuery<R, E>
     ): TdQueryResult<R, E> = coroutineScope {
-        val channel = Channel<TdQueryResult<R, E>>()
+        val result = CompletableDeferred<TdQueryResult<R, E>>()
         nativeClient!!.send(query) { tdobj ->
-            launch {
+            runBlocking {
                 if (tdobj is TdApi.Error) {
-                    channel.send(TdQueryResult.error(queryHandler.onError(tdobj)))
+                    result.complete(TdQueryResult.error(queryHandler.onError(tdobj)))
                 } else {
-                    channel.send(TdQueryResult.success(queryHandler.onResult(tdobj)))
+                    result.complete(TdQueryResult.success(queryHandler.onResult(tdobj)))
                 }
             }
         }
-        return@coroutineScope channel.receive()
+        return@coroutineScope result.await()
     }
 
-    override suspend fun <R: TdApi.Object> sendWithCallback(
+    override suspend fun <R : TdApi.Object> sendWithCallback(
         query: TdApi.Function<*>,
     ): TdQueryResult<R?, TdApi.Error> {
         val defaultQueryHandler = object : ITdQuery<R?, TdApi.Error> {
