@@ -19,7 +19,9 @@ import ru.ilyasok.StickKs.dsl.FeatureBlock
 import ru.ilyasok.StickKs.dsl.FeatureMeta
 import ru.ilyasok.StickKs.model.FeatureModel
 import ru.ilyasok.StickKs.model.FeatureStatus
+import ru.ilyasok.StickKs.model.NotificationType
 import ru.ilyasok.StickKs.model.toFeature
+import ru.ilyasok.StickKs.model.toFeatureMeta
 import ru.ilyasok.StickKs.repository.IFeatureRepository
 import java.time.Instant
 import java.util.UUID
@@ -65,12 +67,11 @@ class FeatureService(
 
 
     @Transactional
-    suspend fun update(id: UUID, featureCode: String, compiledFeature: FeatureBlock): FeatureModel {
+    suspend fun update(id: UUID, featureCode: String, compiledFeature: FeatureBlock): FeatureModel = optimisticTry(10) {
         val featureModel = featureRepository.findById(id)
         requireNotNull(featureModel)
 
         val updatedFeatureModel = try {
-            optimisticTry(10) {
                 featureRepository.save(
                     featureModel.copy(
                         name = compiledFeature.name,
@@ -82,26 +83,24 @@ class FeatureService(
                         successExecutionsAmount = 0L,
                         failedExecutionsAmount = 0L,
                         status = FeatureStatus.STABLE,
-                        disabled = false
+                        disabled = featureModel.disabled
                     )
                 ).also {
                     logger.info("Successfully update feature with id: $id")
                 }
-            }
         } catch (e: Throwable) {
             val message = "Failed to update feature with id: $id"
             logger.error(message, e)
             throw RuntimeException(message, e)
         }
 
-        return updatedFeatureModel
+        return@optimisticTry updatedFeatureModel
     }
 
     @Transactional
     suspend fun create(featureCode: String, compiledFeature: FeatureBlock): FeatureModel {
         val id = UUID.randomUUID()
         val createdFeatureModel = try {
-            optimisticTry(10) {
                 featureRepository.save(
                     FeatureModel(
                         id = id,
@@ -116,7 +115,6 @@ class FeatureService(
                     )
                 ).also {
                     logger.info("Successfully created feature with id: $id")
-                }
             }
         } catch (e: Throwable) {
             val message = "Failed to create feature with id: $id"
@@ -128,16 +126,10 @@ class FeatureService(
     }
 
     @Transactional
-    suspend fun updateMeta(id: UUID, newMeta: FeatureMeta): FeatureModel {
-        val feature = featureRepository.findById(id)
-        requireNotNull(feature)
-        val compilationResult = compilationService.compile(id, feature.code)
-        if (!compilationResult.success) {
-            throw RuntimeException("Failed to compile feature with id: $id")
-        }
+    suspend fun updateMeta(id: UUID, newMeta: FeatureMeta): FeatureModel = optimisticTry(10) {
+        val feature = featureRepository.findById(id) ?: throw RuntimeException("Feature with id: $id not found")
 
         val updatedFeatureModel = try {
-            optimisticTry(10) {
                 featureRepository.save(
                     feature.copy(
                         createdAt = newMeta.createdAt,
@@ -145,25 +137,19 @@ class FeatureService(
                         lastSuccessExecutionAt = newMeta.lastSuccessExecutionAt,
                         lastFailedExecutionAt = newMeta.lastFailedExecutionAt,
                         successExecutionsAmount = newMeta.successExecutionsAmount,
-                        failedExecutionsAmount = newMeta.failedExecutionsAmount
+                        failedExecutionsAmount = newMeta.failedExecutionsAmount,
+                        disabled = newMeta.disabled,
+                        status = newMeta.status,
                     )
-                ).also {
-                    logger.info("Successfully update meta about feature with id: $id")
-                }
-            }
+                )
         } catch (e: Throwable) {
-            val message = "Successfully update meta about feature with id: $id"
+            val message = "Failed to update meta about feature with id: $id"
             logger.error(message, e)
             throw RuntimeException(message, e)
         }
+        logger.info("Successfully update meta about feature with id: $id")
 
-        return updatedFeatureModel
-    }
-
-    suspend fun getMeta(id: UUID): FeatureMeta {
-        val feature = featureRepository.findById(id) ?: throw RuntimeException("Feature not found with id: $id")
-
-        return feature.toFeatureMeta()
+        return@optimisticTry updatedFeatureModel
     }
 
     suspend fun getMetaForAll(ids: List<UUID>): Flow<Pair<UUID, FeatureMeta>> {
@@ -192,6 +178,15 @@ class FeatureService(
     fun getAll(): Flow<FeatureModel> {
         return featureRepository.findAll()
     }
+
+    @Transactional
+    suspend fun changeAvailability(featureId: UUID, reqId: UUID, disable: Boolean): FeatureModel {
+        val feature =
+            featureRepository.findById(featureId) ?: throw RuntimeException("Feature not found with id: $featureId")
+        if (feature.disabled == disable) throw RuntimeException("Feature $featureId already ${if (disable) "disabled" else "enabled"}")
+        return featureRepository.save(feature.copy(disabled = disable))
+    }
+
 
     fun getAllCompiled(): Flow<Feature> {
         return featureRepository.findAll()

@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -11,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseBody
 import ru.ilyasok.StickKs.exception.FeatureOperationException
-import ru.ilyasok.StickKs.model.DeleteFeatureRequest
-import ru.ilyasok.StickKs.model.FeatureErrorsModel
 import ru.ilyasok.StickKs.model.FeatureModel
 import ru.ilyasok.StickKs.model.SaveFeatureRequest
 import ru.ilyasok.StickKs.service.FeatureErrorsService
@@ -73,6 +72,20 @@ class FeatureController(
             return "error-logs"
         } catch (e: Exception) {
             throw FeatureOperationException("Failed to get feature errors: " + e.message)
+        }
+    }
+
+    @PostMapping("/availability/{action}")
+    @ResponseBody
+    suspend fun changeAvailability(
+        @RequestHeader("X-Request-ID") reqId: UUID,
+        @RequestParam("id") featureId: UUID,
+        @PathVariable action: String,
+    ): FeatureModel {
+        try {
+            return featureService.changeAvailability(featureId, reqId, disable = action == "disable")
+        } catch (e: Exception) {
+            throw FeatureOperationException("Failed to $action feature: " + e.message)
         }
     }
 

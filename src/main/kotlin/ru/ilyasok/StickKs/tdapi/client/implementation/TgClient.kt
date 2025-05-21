@@ -18,6 +18,8 @@ import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdMainHandler
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdQuery
 import ru.ilyasok.StickKs.tdapi.model.response.TdQueryResult
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * Kotlin adapter of native [Client]
@@ -28,7 +30,8 @@ import ru.ilyasok.StickKs.tdapi.model.response.TdQueryResult
 class TgClient(
     override val mainHandler: ITdMainHandler,
     @param:Value("\${tdlib.config.log-verbosity-level}")
-    private val logVerbosityLevel: Int
+    private val logVerbosityLevel: Int,
+    override val tgClientParams: TgClientParams
 ) : ITgClient {
 
     private var nativeClient: Client? = null
@@ -100,18 +103,14 @@ class TgClient(
     override suspend fun <R, E> sendWithCallback(
         query: TdApi.Function<*>,
         queryHandler: ITdQuery<R, E>
-    ): TdQueryResult<R, E> = coroutineScope {
-        val result = CompletableDeferred<TdQueryResult<R, E>>()
+    ): TdQueryResult<R, E> = suspendCoroutine { cont ->
         nativeClient!!.send(query) { tdobj ->
-            runBlocking {
-                if (tdobj is TdApi.Error) {
-                    result.complete(TdQueryResult.error(queryHandler.onError(tdobj)))
-                } else {
-                    result.complete(TdQueryResult.success(queryHandler.onResult(tdobj)))
-                }
+            if (tdobj is TdApi.Error) {
+                cont.resume(TdQueryResult.error(queryHandler.onError(tdobj)))
+            } else {
+                cont.resume(TdQueryResult.success(queryHandler.onResult(tdobj)))
             }
         }
-        return@coroutineScope result.await()
     }
 
     override suspend fun <R : TdApi.Object> sendWithCallback(

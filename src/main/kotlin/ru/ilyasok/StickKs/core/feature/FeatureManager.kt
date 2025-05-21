@@ -79,7 +79,7 @@ class FeatureManager(
                 assert(index >= 0) { "Illegal update meta result" }
                 features[index] = features[index].copy(meta = meta)
             }
-            return features.filter { it.isAvailable() }
+            return features.filter { it.isEnabled() && it.control() }
         }
     }
 

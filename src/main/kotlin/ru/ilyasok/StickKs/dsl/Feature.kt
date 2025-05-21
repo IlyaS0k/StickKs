@@ -10,11 +10,14 @@ data class Feature(
     val feature: FeatureBlock,
     val meta: FeatureMeta
 ) {
-    fun isAvailable() = feature.availability.isAvailable(meta)
+    fun control() = feature.executionControl.control(meta)
+
+    fun isEnabled() = !meta.disabled
 }
 
 data class FeatureMeta(
     val status: FeatureStatus,
+    val disabled: Boolean,
     val createdAt: Instant,
     val lastModifiedAt: Instant,
     val lastSuccessExecutionAt: Instant?,

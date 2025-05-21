@@ -60,5 +60,6 @@ fun FeatureModel.toFeatureMeta() = FeatureMeta(
     lastFailedExecutionAt = this.lastFailedExecutionAt,
     successExecutionsAmount = this.successExecutionsAmount,
     failedExecutionsAmount = this.failedExecutionsAmount,
-    status = this.status
+    status = this.status,
+    disabled = this.disabled,
 )

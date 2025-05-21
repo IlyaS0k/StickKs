@@ -37,10 +37,15 @@ class FeaturesContext {
     }
 
     set currentFeature(newCurrentFeature) {
+        const disableButton = document.getElementById("disable-button")
         if (newCurrentFeature == null) {
+            disableButton.style.visibility = "hidden"
             monacoEditor.setValue("feature {\n\n}")
         } else {
-            let featureCode = this.#features.find(f => f.id === newCurrentFeature).code
+            const feature = this.#features.find(f => f.id === newCurrentFeature)
+            let featureCode = feature.code
+            disableButton.style.visibility = "visible"
+            disableButton.innerText = feature.disabled ? "Enable " : "Disable"
             monacoEditor.setValue(featureCode)
         }
         this.#currentFeature = newCurrentFeature
@@ -124,6 +129,7 @@ async function initialization() {
         console.log("WebSocket connection established")
     })
     ws.addEventListener("close", () => {
+        window.location.href = "/error"
         console.error("WebSocket closed")
     })
     for (const f of context.features) {
@@ -230,7 +236,7 @@ function createFeature(f) {
             break
         case context.STATUS_UNSTABLE:
             div.innerText = `[UNSTABLE] ${f.name}`
-            div.style.color = "orange"
+            div.style.color = "#D2691E"
             break
         case context.STATUS_LOADING:
         case context.STATUS_CREATING:
@@ -241,6 +247,7 @@ function createFeature(f) {
             break
         default:
     }
+    div.innerText = f.disabled ? div.innerText = "[DISABLED] " + div.innerText : div.innerText
     div.onclick = () => loadFeature(f.id);
     return div
 }
@@ -385,6 +392,39 @@ async function logout() {
         }
     } catch (error) {
         alert("Logout error: " + error.message);
+    }
+}
+
+async function changeAvailability() {
+    const featureId = context.currentFeature
+    if (featureId != null) {
+        try {
+            const feature = context.features.find(f => f.id === context.currentFeature)
+            const action = feature.disabled ? 'enable' : 'disable'
+            if (confirm(`Are you sure you want to ${action} this feature?`)) {
+                const reqId = crypto.randomUUID()
+                const response = await fetch(`http://${context.APP_ADDRESS}/features/availability/${action}?id=${featureId}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-type": "application/json; charset=utf-8",
+                        "X-Request-ID": reqId
+                    }
+                })
+
+                if (!response.ok) {
+                    alert("Failed to change feature availability: " + await response.text());
+                } else {
+                    const updatedFeature = await response.json()
+                    context.updateFeature(updatedFeature)
+                    if (context.currentFeature === featureId) {
+                        const disableButton = document.getElementById("disable-button")
+                        disableButton.innerText = updatedFeature.disabled ? "Enable " : "Disable"
+                    }
+                }
+            }
+        } catch (error) {
+            alert("Failed to change feature availability: " + error.message);
+        }
     }
 }
 

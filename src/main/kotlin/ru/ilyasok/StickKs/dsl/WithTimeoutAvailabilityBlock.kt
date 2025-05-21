@@ -8,9 +8,9 @@ class WithTimeoutAvailabilityBlock(
     val afterStart: Duration,
     val timeout: Duration?,
     val limit: Int
-) : AvailabilityBlock() {
+) : ExecutionControlBlock() {
 
-    override fun isAvailable(meta: FeatureMeta): Boolean {
+    override fun control(meta: FeatureMeta): Boolean {
         val now = Instant.now()
         if (limit <= meta.successExecutionsAmount) return false
         if (timeout != null &&
@@ -38,6 +38,6 @@ class WithTimeoutAvailabilityBlockBuilder {
 @FeatureDSL
 fun FeatureBlockBuilder.withTimeout(block: WithTimeoutAvailabilityBlockBuilder.() -> Unit): WithTimeoutAvailabilityBlock {
     val a = WithTimeoutAvailabilityBlockBuilder().apply(block).build()
-    this.availability = a
+    this.executionControl = a
     return a
 }

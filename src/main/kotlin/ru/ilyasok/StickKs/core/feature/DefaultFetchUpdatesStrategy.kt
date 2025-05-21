@@ -24,14 +24,6 @@ class DefaultFetchUpdatesStrategy(
     override suspend fun fetch() {
         featureUpdatesQueue.get().collect { updateInfo ->
             when (updateInfo.updateType) {
-                FeatureUpdateType.META_UPDATED -> {
-                    val meta = featureService.getMeta(updateInfo.id)
-                    featuresMutex.withLock {
-                        val index = features.indexOfFirst { it.id == updateInfo.id }
-                        if (index != -1) features[index] = features[index].copy(meta = meta)
-                    }
-                }
-
                 FeatureUpdateType.CODE_UPDATED -> {
                     val updated = featureService.getById(updateInfo.id)
                     featuresMutex.withLock {

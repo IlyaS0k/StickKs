@@ -77,6 +77,5 @@ data class FeatureUpdateInfo(
 enum class FeatureUpdateType {
     CREATED,
     DELETED,
-    CODE_UPDATED,
-    META_UPDATED
+    CODE_UPDATED
 }

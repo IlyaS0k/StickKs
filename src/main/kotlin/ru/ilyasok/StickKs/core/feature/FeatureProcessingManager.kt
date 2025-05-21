@@ -7,12 +7,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import ru.ilyasok.StickKs.core.event.queue.EventQueue
+import ru.ilyasok.StickKs.dsl.FeatureProcessor
 import kotlin.time.Duration.Companion.minutes
 
 @Component
 class FeatureProcessingManager(
     private val featureManager: FeatureManager,
     private val featureUpdatesQueue: FeatureUpdatesQueue,
+    private val featureProcessor: FeatureProcessor,
 ) {
 
     private var disableUpdatesQueueJob: Job? = null
@@ -32,6 +35,7 @@ class FeatureProcessingManager(
 
     suspend fun enable(refresh: Boolean = false) = mutex.withLock {
         try {
+            if (refresh) featureProcessor.startLoop()
             featureUpdatesQueue.enable()
             featureManager.enable(refresh)
             logger.info("Feature processing enabled")
