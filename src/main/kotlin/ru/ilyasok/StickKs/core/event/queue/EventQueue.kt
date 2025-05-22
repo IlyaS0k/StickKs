@@ -1,25 +1,13 @@
 package ru.ilyasok.StickKs.core.event.queue
 
-import jakarta.annotation.PostConstruct
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.core.context.EventContext
-import ru.ilyasok.StickKs.dsl.FeatureProcessor
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.log
 
 @Component
-class EventQueue(
-    private val featureProcessor: FeatureProcessor
-) {
+class EventQueue {
     private val queue: Channel<EventContext> = Channel(Channel.UNLIMITED)
 
     companion object {
