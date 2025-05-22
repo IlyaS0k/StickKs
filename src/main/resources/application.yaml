@@ -39,3 +39,5 @@ logging:
   level:
     flyway: DEBUG
 
+dsl-dependencies: "src/main/resources/dsl/dependencies"
+
