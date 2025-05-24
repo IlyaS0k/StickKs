@@ -39,6 +39,8 @@ class FeatureCompilationService(
 
         private const val OUTPUT_DIR_NAME = "feature-compilation-output"
 
+        private val EXCLUDE_CP_EXTENSIONS = listOf("css", "js")
+
     }
 
     data class CompilationResult(
@@ -82,7 +84,7 @@ class FeatureCompilationService(
             val args = K2JVMCompilerArguments().apply {
                 freeArgs = listOf(sourceFile.absolutePath)
                 destination = compilationOutputDir.absolutePath
-                classpath = System.getProperty("java.class.path")
+                classpath = compilerClassPath()
             }
             val compilationOutputStream = ByteArrayOutputStream()
             val exitCode = K2JVMCompiler().exec(PrintStream(compilationOutputStream), *args.toArgumentStrings().toTypedArray())
@@ -112,6 +114,15 @@ class FeatureCompilationService(
         }
     }
 
+    private fun compilerClassPath(): String {
+        val rawClassPath = System.getProperty("java.class.path")
+        val filterCpRegex = Regex(""".*\.(${EXCLUDE_CP_EXTENSIONS.joinToString("|")})$""", RegexOption.IGNORE_CASE)
+
+        return rawClassPath
+            .split(":")
+            .filterNot { it.matches(filterCpRegex) }
+            .joinToString(":")
+    }
 
     private suspend fun setBroken(featureId: UUID)  {
         try {
