@@ -17,7 +17,7 @@ class EventQueue {
 
     fun enqueue(e: EventContext) = runBlocking {
         queue.send(e)
-        logger.info("added new event ${System.identityHashCode(e)}")
+        logger.info("Added new event ${System.identityHashCode(e)}")
     }
 
     suspend fun dequeue(): EventContext {

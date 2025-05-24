@@ -44,7 +44,7 @@ class TdAuthorizationHandler(
                 }
                 else -> return
             }
-            logger.info("updated auth state: ${newState.name}")
+            logger.info("Updated auth state: ${newState.name}")
         }
     }
 }

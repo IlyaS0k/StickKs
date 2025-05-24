@@ -98,6 +98,7 @@ class FeatureProcessor(
                 }
             }
         }
+        logger.debug("Processing ${processingId.inc()} finished")
     }
 
     private fun <T : EventContext> Feature.checkEvent(eventContext: T): Boolean {

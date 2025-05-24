@@ -64,6 +64,7 @@ class FeatureCompilationService(
     }
 
     fun compile(id: UUID?, featureCode: String): CompilationResult {
+        logger.info("Starting compilation process for feature $id")
         val threadId = Thread.currentThread().id
         val compilationOutputFile = "Feature${threadId}.kt"
         val classToLoad = "Feature${threadId}Kt"
