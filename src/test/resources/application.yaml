@@ -15,3 +15,11 @@ postgres-docker:
   port:
     host: 5434
     container: 5432
+
+logging:
+  level:
+    root: INFO
+    flyway: INFO
+    org.springframework.web: INFO
+
+local.server.port: 8080
