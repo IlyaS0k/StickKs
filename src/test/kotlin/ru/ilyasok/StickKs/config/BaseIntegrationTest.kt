@@ -7,5 +7,5 @@ import org.springframework.context.annotation.Import
 
 @SpringBootTest
 @Disabled
-@Import(TestTgConfiguration::class)
+@Import(TestTgConfiguration::class, PostgresContainerConfig::class)
 class BaseIntegrationTest(block: StringSpec.() -> Unit) : StringSpec(block)
