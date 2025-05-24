@@ -2,3 +2,6 @@ logging:
   level:
     root: INFO
     ru.ilyasok.StickKs: DEBUG
+
+tdlib.config:
+  log-verbosity-level: 1
