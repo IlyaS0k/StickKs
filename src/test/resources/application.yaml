@@ -6,3 +6,12 @@ spring:
       chat:
 
 dsl-dependencies: "src/main/resources/dsl/dependencies"
+
+postgres-docker:
+  image: postgres:15-alpine
+  db-name: test-db
+  user: &postgres-docker-user postgres
+  password: &postgres-docker-password postgres
+  port:
+    host: 5434
+    container: 5432
