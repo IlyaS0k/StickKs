@@ -66,9 +66,8 @@ class FeatureService(
 
 
     @Transactional
-    suspend fun update(id: UUID, featureCode: String, compiledFeature: FeatureBlock): FeatureModel = optimisticTry(10) {
-        val featureModel = featureRepository.findById(id)
-        requireNotNull(featureModel)
+    suspend fun update(id: UUID, featureCode: String, compiledFeature: FeatureBlock): FeatureModel {
+        val featureModel = featureRepository.selectForUpdate(id)
 
         val updatedFeatureModel = try {
                 featureRepository.save(
@@ -93,7 +92,7 @@ class FeatureService(
             throw RuntimeException(message, e)
         }
 
-        return@optimisticTry updatedFeatureModel
+        return updatedFeatureModel
     }
 
     @Transactional
@@ -181,7 +180,7 @@ class FeatureService(
     @Transactional
     suspend fun changeAvailability(featureId: UUID, reqId: UUID, disable: Boolean): FeatureModel {
         val feature =
-            featureRepository.findById(featureId) ?: throw RuntimeException("Feature not found with id: $featureId")
+            featureRepository.selectForUpdate(featureId)
         if (feature.disabled == disable) throw RuntimeException("Feature $featureId already ${if (disable) "disabled" else "enabled"}")
         return featureRepository.save(feature.copy(disabled = disable))
     }
