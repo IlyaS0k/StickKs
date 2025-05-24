@@ -7,7 +7,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import ru.ilyasok.StickKs.core.event.queue.EventQueue
 import ru.ilyasok.StickKs.dsl.FeatureProcessor
 import kotlin.time.Duration.Companion.minutes
 
