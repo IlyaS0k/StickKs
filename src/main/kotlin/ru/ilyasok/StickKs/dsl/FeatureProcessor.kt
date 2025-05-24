@@ -8,12 +8,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import ru.ilyasok.StickKs.core.feature.FeatureManager
 import ru.ilyasok.StickKs.core.context.EventContext
 import ru.ilyasok.StickKs.core.event.TimerEvent
 import ru.ilyasok.StickKs.core.event.queue.EventQueue
+import ru.ilyasok.StickKs.core.feature.FeatureManager
 import ru.ilyasok.StickKs.model.FeatureStatus
 import ru.ilyasok.StickKs.model.NotificationType
 import ru.ilyasok.StickKs.service.FeatureErrorsService
@@ -33,6 +34,10 @@ class FeatureProcessor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java)
+
+        private const val WAITING_FOR_JOB = 15_000L
+
+        private val processingId = 0L
     }
 
     private lateinit var loopJob: Job
@@ -55,7 +60,7 @@ class FeatureProcessor(
         while (true) {
             try {
                 val ec = eventQueue.dequeue()
-                logger.info("received event ${ec.hashCode()}")
+                logger.info("Received event ${ec.hashCode()}")
                 process(ec)
             } catch (_: CancellationException) {
                 logger.info("EventQueue loop cancelled")
