@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.compilerRunner.toArgumentStrings
-import org.jetbrains.kotlin.utils.PathUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -28,7 +27,7 @@ import java.util.UUID
 class FeatureCompilationService(
     private val featureErrorsService: FeatureErrorsService,
     private val featureRepository: IFeatureRepository,
-    private val dslDependenciesProvider: DSLDependenciesProvider
+    dslDependenciesProvider: DSLDependenciesProvider
 ) {
 
     companion object {
