@@ -1,5 +1,7 @@
 package ru.ilyasok.StickKs.dsl
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import ru.ilyasok.StickKs.model.FeatureStatus
 import java.time.Instant
 import java.util.UUID
@@ -8,8 +10,12 @@ data class Feature(
     val id: UUID,
     val version: Long,
     val feature: FeatureBlock,
-    val meta: FeatureMeta
+    val meta: FeatureMeta,
+    private val processingMutex: Mutex = Mutex(),
 ) {
+
+    suspend fun process(block: suspend (Feature) -> Unit) = processingMutex.withLock { block(this) }
+
     fun control() = feature.executionControl.control(meta)
 
     fun isEnabled() = !meta.disabled

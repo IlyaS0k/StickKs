@@ -66,38 +66,45 @@ class FeatureProcessor(
         }
     }
 
-    suspend fun process(eventContext: EventContext) {
-        featureManager.getFeatures().forEach { feature ->
-            var updatedMeta: FeatureMeta? = null
-            try {
-                feature
-                    .takeIf { feature -> feature.checkEvent(eventContext) }
-                    ?.takeIf { feature -> feature.checkCondition(eventContext) }
-                    ?.let { feature ->
-                        logger.info("start process feature $feature")
-                        feature.execute(eventContext)
-                        updatedMeta = feature.meta.copy(
-                            lastSuccessExecutionAt = Instant.now(),
-                            successExecutionsAmount = feature.meta.successExecutionsAmount + 1
-                        )
-                        logger.info("successfully process feature $feature")
+    suspend fun process(eventContext: EventContext) = coroutineScope {
+        val features = featureManager.getFeatures()
+        for (f in features) {
+            CoroutineScope(Dispatchers.Default).launch(CoroutineName("Feature${f.id}ProcessCoro")) {
+                withTimeoutOrNull(WAITING_FOR_JOB) {
+                    var updatedMeta: FeatureMeta? = null
+                    f.process { feature ->
+                        try {
+                            feature.takeIf { feature -> feature.checkEvent(eventContext) }
+                                ?.takeIf { feature -> feature.checkCondition(eventContext) }
+                                ?.let { feature ->
+                                    logger.info("Start process feature ${feature.id}")
+                                    feature.execute(eventContext)
+                                    updatedMeta = feature.meta.copy(
+                                        lastSuccessExecutionAt = Instant.now(),
+                                        successExecutionsAmount = feature.meta.successExecutionsAmount + 1
+                                    )
+                                    logger.info("Successfully process feature $feature")
+                                }
+                        } catch (e: Throwable) {
+                            logger.warn("Failed to process feature ${feature.id}", e)
+                            updatedMeta = feature.meta.copy(
+                                status = FeatureStatus.UNSTABLE,
+                                lastFailedExecutionAt = Instant.now(),
+                                failedExecutionsAmount = feature.meta.failedExecutionsAmount + 1
+                            )
+                            featureErrorsService.updateFeatureErrors(feature.id, e.stackTraceToString())
+                            notificationService.notify(feature.id, null, NotificationType.FEATURE_UNSTABLE)
+                        } finally {
+                            if (updatedMeta != null) {
+                                logger.debug("Start updating feature {} meta after processing", feature.id)
+                                featureService.updateMeta(feature.id, updatedMeta!!)
+                            }
+                        }
                     }
-            } catch (e: Throwable) {
-                logger.warn("failed to process feature $feature", e)
-                updatedMeta = feature.meta.copy(
-                    status = FeatureStatus.UNSTABLE,
-                    lastFailedExecutionAt = Instant.now(),
-                    failedExecutionsAmount = feature.meta.failedExecutionsAmount + 1
-                )
-                featureErrorsService.updateFeatureErrors(feature.id, e.stackTraceToString())
-                notificationService.notify(feature.id, null, NotificationType.FEATURE_UNSTABLE)
-            } finally {
-                if (updatedMeta != null) {
-                    logger.debug("start updating feature({}) meta after processing", feature.id)
-                    featureService.updateMeta(feature.id, updatedMeta!!)
                 }
             }
         }
+
         logger.debug("Processing ${processingId.inc()} finished")
     }
 
