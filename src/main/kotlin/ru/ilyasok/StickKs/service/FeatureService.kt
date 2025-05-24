@@ -19,7 +19,6 @@ import ru.ilyasok.StickKs.dsl.FeatureBlock
 import ru.ilyasok.StickKs.dsl.FeatureMeta
 import ru.ilyasok.StickKs.model.FeatureModel
 import ru.ilyasok.StickKs.model.FeatureStatus
-import ru.ilyasok.StickKs.model.NotificationType
 import ru.ilyasok.StickKs.model.toFeature
 import ru.ilyasok.StickKs.model.toFeatureMeta
 import ru.ilyasok.StickKs.repository.IFeatureRepository
