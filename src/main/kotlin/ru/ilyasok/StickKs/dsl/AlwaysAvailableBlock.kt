@@ -5,6 +5,6 @@ class AlwaysAvailableBlock(private val limit: Long): ExecutionControlBlock() {
 }
 
 @FeatureDSL
-fun FeatureBlockBuilder.always(limit: Long)  {
-    this.executionControl = AlwaysAvailableBlock(limit)
+fun FeatureBlockBuilder.always(limit: () -> Long = { Long.MAX_VALUE }) {
+    this.executionControl = AlwaysAvailableBlock(limit.invoke())
 }
