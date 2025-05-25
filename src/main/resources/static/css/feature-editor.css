@@ -106,3 +106,13 @@ textarea {
     height: 500px;
     border: 1px solid #ddd;
 }
+#feature-id-label {
+    position: fixed;
+    bottom: 5px;
+    right: 10px;
+    background-color: transparent;
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 1000;
+    color: rgba(0, 0, 0, 0.5);
+}

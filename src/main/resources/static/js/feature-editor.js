@@ -248,7 +248,16 @@ function createFeature(f) {
         default:
     }
     div.innerText = f.disabled ? div.innerText = "[DISABLED] " + div.innerText : div.innerText
-    div.onclick = () => loadFeature(f.id);
+    div.onclick = () => loadFeature(f.id)
+    div.addEventListener('mouseenter', () => {
+        const label = document.getElementById('feature-id-label');
+        if (label) label.innerText = f.id;
+    })
+    div.addEventListener('mouseleave', () => {
+        const label = document.getElementById('feature-id-label');
+        if (label) label.innerText = context.currentFeature;
+    })
+
     return div
 }
 
@@ -431,6 +440,8 @@ async function changeAvailability() {
 function createNewFeature() {
     context.newFeatureSelections++
     context.currentFeature = null
+    const label = document.getElementById('feature-id-label')
+    if (label) label.innerText = ''
 }
 
 window.onload = initialization
