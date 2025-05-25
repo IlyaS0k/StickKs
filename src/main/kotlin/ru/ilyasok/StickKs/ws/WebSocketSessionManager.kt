@@ -5,12 +5,16 @@ import org.springframework.web.socket.WebSocketSession
 
 @Component
 class WebSocketSessionManager {
-    private var session: WebSocketSession? = null
+    private var sessions: MutableList<WebSocketSession> = mutableListOf()
 
-    fun session(): WebSocketSession? = session
+    fun sessions(): List<WebSocketSession> = synchronized(this) { sessions.toList() }
 
-    fun openSession(session: WebSocketSession) = synchronized(this) {
-        this.session = session
+    fun addSession(session: WebSocketSession) = synchronized(this) {
+        this.sessions.add(session)
+    }
+
+    fun closeSession(session: WebSocketSession) = synchronized(this) {
+        this.sessions.remove(session)
     }
 
 }

@@ -37,5 +37,16 @@ class TgFunctions(val client: ITgClient) {
                 }
             }
         }
+
+        feature {
+            onEvent {
+                newTelegramMessage {
+                    execute {
+                        println("XIAOAAAAAAAAAAAAAAAAAAAAA")
+                    }
+                }
+            }
+        }
     }
+
 }

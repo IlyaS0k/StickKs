@@ -20,17 +20,19 @@ class NotificationService(
         private val logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private fun sendWithSession(block: NotificationService.(WebSocketSession) -> NotificationMessage) {
-        val session = sessionManager.session()
-        if (session?.isOpen == true) {
-            val message = block(session)
-            logger.info("Send notification message : $message")
-        } else {
-            logger.info("Session is not available")
+    private fun sendToAll(block: NotificationService.(WebSocketSession) -> NotificationMessage) {
+        val sessions = sessionManager.sessions()
+        for (session in sessions) {
+            if (session.isOpen) {
+                val message = block(session)
+                logger.info("Send notification message : $message")
+            } else {
+                logger.info("Session is not available")
+            }
         }
     }
 
-    fun notify(featureId: UUID, reqId: UUID?, notification: NotificationType) = sendWithSession { session ->
+    fun notify(featureId: UUID, reqId: UUID?, notification: NotificationType) = sendToAll { session ->
         val message = NotificationMessage(
             reqId = reqId,
             id = featureId,
