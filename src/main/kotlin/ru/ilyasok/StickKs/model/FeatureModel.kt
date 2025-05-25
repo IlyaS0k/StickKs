@@ -50,7 +50,8 @@ fun FeatureModel.toFeature(featureBlock: FeatureBlock) = Feature(
     id = this.id,
     version = this.version!!,
     feature = featureBlock,
-    meta = this.toFeatureMeta()
+    meta = this.toFeatureMeta(),
+    name = this.name,
 )
 
 fun FeatureModel.toFeatureMeta() = FeatureMeta(

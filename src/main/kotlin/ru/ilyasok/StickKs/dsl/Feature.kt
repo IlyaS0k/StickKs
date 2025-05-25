@@ -8,6 +8,7 @@ import java.util.UUID
 
 data class Feature(
     val id: UUID,
+    val name: String,
     val version: Long,
     val feature: FeatureBlock,
     val meta: FeatureMeta,
@@ -19,6 +20,8 @@ data class Feature(
     fun control() = feature.executionControl.control(meta)
 
     fun isEnabled() = !meta.disabled
+
+    fun idName() = "[$name| $id]"
 }
 
 data class FeatureMeta(

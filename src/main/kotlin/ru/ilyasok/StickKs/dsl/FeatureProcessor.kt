@@ -71,24 +71,28 @@ class FeatureProcessor(
         }
     }
 
-    suspend fun process(eventContext: EventContext) = coroutineScope {
+    suspend fun process(eventContext: EventContext) {
         val features = featureManager.getFeatures()
         for (f in features) {
             CoroutineScope(Dispatchers.Default).launch(CoroutineName("Feature${f.id}ProcessCoro")) {
-                withTimeoutOrNull(WAITING_FOR_JOB) {
-                    var updatedMeta: FeatureMeta? = null
-                    f.process { feature ->
+                var updatedMeta: FeatureMeta? = null
+                f.process {
+                    logger.info("Start process feature ${f.idName()}")
+                    val meta = featureService.getMeta(f.id)
+                    val feature = f.copy(meta = meta)
+                    if (!feature.isEnabled() || !feature.control()) return@process
+                    withTimeoutOrNull(WAITING_FOR_JOB) {
                         try {
                             feature.takeIf { feature -> feature.checkEvent(eventContext) }
                                 ?.takeIf { feature -> feature.checkCondition(eventContext) }
                                 ?.let { feature ->
-                                    logger.info("Start process feature ${feature.id}")
+                                    logger.info("Start execute feature ${feature.idName()}")
                                     feature.execute(eventContext)
                                     updatedMeta = feature.meta.copy(
                                         lastSuccessExecutionAt = Instant.now(),
                                         successExecutionsAmount = feature.meta.successExecutionsAmount + 1
                                     )
-                                    logger.info("Successfully process feature $feature")
+                                    logger.info("Successfully process feature ${feature.idName()}")
                                 }
                         } catch (e: Throwable) {
                             logger.warn("Failed to process feature ${feature.id}", e)
@@ -101,8 +105,13 @@ class FeatureProcessor(
                             notificationService.notify(feature.id, null, NotificationType.FEATURE_UNSTABLE)
                         } finally {
                             if (updatedMeta != null) {
-                                logger.debug("Start updating feature {} meta after processing", feature.id)
-                                featureService.updateMeta(feature.id, updatedMeta!!)
+                                logger.debug("Start updating feature {} meta after processing", feature.idName())
+                                try {
+                                    featureService.updateMeta(feature.id, updatedMeta!!)
+                                    logger.info("After update meta")
+                                } catch (e: Throwable) {
+                                    logger.error("Failed to update feature {} meta after processing", feature.idName(), e)
+                                }
                             }
                         }
                     }
