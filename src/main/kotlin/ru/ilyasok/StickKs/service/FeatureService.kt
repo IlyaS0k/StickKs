@@ -165,9 +165,12 @@ class FeatureService(
         return feature.toFeatureMeta()
     }
 
+    suspend fun getById(id: UUID): FeatureModel {
+        return featureRepository.findById(id) ?: throw RuntimeException("Feature with id: $id not found")
+    }
 
     @Transactional
-    suspend fun getById(id: UUID): Feature {
+    suspend fun getByIdCompiled(id: UUID): Feature {
         val featureModel = featureRepository.findById(id) ?: throw RuntimeException("Feature not found with id: $id")
         val compilationResult = compilationService.compile(id, featureModel.code, false)
         return if (compilationResult.success)

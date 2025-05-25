@@ -24,7 +24,7 @@ class DefaultFetchUpdatesStrategy(
         featureUpdatesQueue.get().collect { updateInfo ->
             when (updateInfo.updateType) {
                 FeatureUpdateType.CODE_UPDATED -> {
-                    val updated = featureService.getById(updateInfo.id)
+                    val updated = featureService.getByIdCompiled(updateInfo.id)
                     featuresMutex.withLock {
                         val index = features.indexOfFirst { it.id == updateInfo.id }
                         if (index != -1) features[index] = updated else features.add(updated)
@@ -33,7 +33,7 @@ class DefaultFetchUpdatesStrategy(
                 }
 
                 FeatureUpdateType.CREATED -> {
-                    val created = featureService.getById(updateInfo.id)
+                    val created = featureService.getByIdCompiled(updateInfo.id)
                     featuresMutex.withLock {
                         features.add(created)
                     }
