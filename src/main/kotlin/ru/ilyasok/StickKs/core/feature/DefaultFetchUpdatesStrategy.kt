@@ -2,7 +2,6 @@ package ru.ilyasok.StickKs.core.feature
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import ru.ilyasok.StickKs.dsl.Feature
 import ru.ilyasok.StickKs.model.NotificationType
