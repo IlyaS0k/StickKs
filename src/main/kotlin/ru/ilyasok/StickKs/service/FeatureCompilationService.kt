@@ -56,15 +56,15 @@ class FeatureCompilationService(
 
     private val imports = dslDependenciesProvider.provideAsString()
 
-    fun compileAsync(id: UUID?, featureCode: String) = CoroutineScope(Dispatchers.IO).async {
+    fun compileAsync(id: UUID?, featureCode: String, markBroken: Boolean = true) = CoroutineScope(Dispatchers.IO).async {
         val isBroken = if (id != null) featureRepository.findById(id)?.status == FeatureStatus.BROKEN else false
         if (!isBroken) {
-            return@async compile(id, featureCode)
+            return@async compile(id, featureCode, markBroken)
         }
         return@async CompilationResult(success = false, error = RuntimeException("attempt to compile broken feature"), featureBlock = null)
     }
 
-    fun compile(id: UUID?, featureCode: String): CompilationResult {
+    fun compile(id: UUID?, featureCode: String, markBroken: Boolean = true): CompilationResult {
         logger.info("Starting compilation process for feature $id")
         val threadId = Thread.currentThread().id
         val compilationOutputFile = "Feature${threadId}.kt"
@@ -90,7 +90,7 @@ class FeatureCompilationService(
             if (exitCode != ExitCode.OK) {
                 val compilationError = RuntimeException("$exitCode : $compilationOutputStream")
                 if (id != null) runBlocking {
-                    setBroken(id)
+                    if (markBroken) setBroken(id)
                     featureErrorsService.updateFeatureErrors(id, compilationError.stackTraceToString())
                 }
                 return CompilationResult(success = false, error = compilationError)

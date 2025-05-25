@@ -44,7 +44,7 @@ class FeatureService(
 
     suspend fun save(id: UUID?, reqId: UUID, featureCode: String): FeatureModel {
         val isUpdate = id != null
-        val compilationResult = compilationService.compile(id, featureCode)
+        val compilationResult = compilationService.compile(id, featureCode, false)
         if (!compilationResult.success) {
             throw RuntimeException("Failed to save feature: ${compilationResult.error?.toString()}")
         }
@@ -159,10 +159,17 @@ class FeatureService(
         return meta
     }
 
+    suspend fun getMeta(id: UUID): FeatureMeta {
+        val feature = featureRepository.findById(id) ?: throw RuntimeException("Feature with id: $id not found")
+
+        return feature.toFeatureMeta()
+    }
+
+
     @Transactional
     suspend fun getById(id: UUID): Feature {
         val featureModel = featureRepository.findById(id) ?: throw RuntimeException("Feature not found with id: $id")
-        val compilationResult = compilationService.compile(id, featureModel.code)
+        val compilationResult = compilationService.compile(id, featureModel.code, false)
         return if (compilationResult.success)
             featureModel.toFeature(compilationResult.featureBlock!!)
         else
