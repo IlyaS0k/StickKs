@@ -7,7 +7,7 @@ import kotlin.time.toJavaDuration
 class WithTimeoutAvailabilityBlock(
     val afterStart: Duration,
     val timeout: Duration?,
-    val limit: Int
+    val limit: Long
 ) : ExecutionControlBlock() {
 
     override fun control(meta: FeatureMeta): Boolean {
@@ -27,7 +27,7 @@ class WithTimeoutAvailabilityBlock(
 class WithTimeoutAvailabilityBlockBuilder {
     var afterStart: Duration = Duration.ZERO
     var timeout: Duration = Duration.ZERO
-    var limit: Int = Int.MAX_VALUE
+    var limit: Long = Long.MAX_VALUE
 
     fun build(): WithTimeoutAvailabilityBlock {
         require(limit > 0) { "limit is not greater than 0" }
