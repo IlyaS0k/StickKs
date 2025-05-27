@@ -21,6 +21,7 @@ import java.io.File
 import java.io.PrintStream
 import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
+import java.nio.file.Files
 import java.util.UUID
 
 @Service
@@ -29,6 +30,10 @@ class FeatureCompilationService(
     private val featureRepository: IFeatureRepository,
     dslDependenciesProvider: DSLDependenciesProvider
 ) {
+
+    init {
+       clearCompilationOutputDir()
+    }
 
     companion object {
 
@@ -39,6 +44,22 @@ class FeatureCompilationService(
         private const val OUTPUT_DIR_NAME = "feature-compilation-output"
 
         private val EXCLUDE_CP_EXTENSIONS = listOf("css", "js")
+
+        private fun clearCompilationOutputDir() {
+            val directory = File(OUTPUT_DIR_NAME).apply { mkdirs() }
+
+            Files.walk(directory.toPath())
+                .filter { it != directory.toPath() }
+                .sorted(java.util.Comparator.reverseOrder())
+                .forEach {
+                    try {
+                        Files.delete(it)
+                        logger.debug("Deleted file: {}", it)
+                    } catch (e: Exception) {
+                        logger.debug("Failed to delete file {}: {}", it, e.message)
+                    }
+                }
+        }
 
     }
 
@@ -52,7 +73,7 @@ class FeatureCompilationService(
         }
     }
 
-    private var compilationOutputDir: File = File(OUTPUT_DIR_NAME).apply { mkdirs() }
+    private var compilationOutputDir: File = File(OUTPUT_DIR_NAME)
 
     private val imports = dslDependenciesProvider.provideAsString()
 
@@ -85,8 +106,8 @@ class FeatureCompilationService(
                 destination = compilationOutputDir.absolutePath
                 classpath = compilerClassPath()
             }
-            val compilationOutputStream = ByteArrayOutputStream()
-            val exitCode = K2JVMCompiler().exec(PrintStream(compilationOutputStream), *args.toArgumentStrings().toTypedArray())
+            val compilationOutputStream = PrintStream(ByteArrayOutputStream())
+            val exitCode = K2JVMCompiler().exec(compilationOutputStream, *args.toArgumentStrings().toTypedArray())
             if (exitCode != ExitCode.OK) {
                 val compilationError = RuntimeException("$exitCode : $compilationOutputStream")
                 if (id != null) runBlocking {
@@ -109,7 +130,15 @@ class FeatureCompilationService(
             logger.info("Error while compiling feature\n: $featureCode", e)
             return CompilationResult(success = false, error = e)
         } finally {
-            compilationOutputDir.listFiles()?.forEach { if (it.name.contains(nameSubstrToDelete)) it.delete() }
+            compilationOutputDir.listFiles()?.forEach {
+                try {
+                    if (it.name.contains(nameSubstrToDelete)) {
+                        it.delete()
+                    }
+                } catch (e: Throwable) {
+                    logger.error("Failed to delete temp compilation file $it", e)
+                }
+            }
         }
     }
 
