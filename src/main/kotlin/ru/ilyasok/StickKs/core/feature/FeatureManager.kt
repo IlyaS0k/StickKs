@@ -24,7 +24,7 @@ class FeatureManager(
     private val notificationService: NotificationService
 ) {
 
-    private var features: MutableList<Feature> = mutableListOf()
+    private val features: MutableList<Feature> = mutableListOf()
     private val mutex = Mutex()
     private val status = AtomicReference(AvailabilityStatus.DISABLED)
     private val statusChangedSignal = CompletableDeferred<Unit>()
