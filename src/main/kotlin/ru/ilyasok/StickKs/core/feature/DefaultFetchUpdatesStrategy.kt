@@ -23,33 +23,39 @@ class DefaultFetchUpdatesStrategy(
     override suspend fun fetch() {
         featureUpdatesQueue.get().collect { updateInfo ->
             when (updateInfo.updateType) {
-                FeatureUpdateType.CODE_UPDATED -> {
-                    val updated = featureService.getByIdCompiled(updateInfo.id)
-                    featuresMutex.withLock {
-                        val index = features.indexOfFirst { it.id == updateInfo.id }
-                        if (index != -1) features[index] = updated else features.add(updated)
-                    }
-                    notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_UPDATED)
-                }
+                FeatureUpdateType.CODE_UPDATED -> onCodeUpdated(updateInfo)
 
-                FeatureUpdateType.CREATED -> {
-                    val created = featureService.getByIdCompiled(updateInfo.id)
-                    featuresMutex.withLock {
-                        features.add(created)
-                    }
-                    notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_CREATED)
-                }
+                FeatureUpdateType.CREATED -> onCreated(updateInfo)
 
-                FeatureUpdateType.DELETED -> {
-                    val exists = featureService.existsById(updateInfo.id)
-                    if (!exists) {
-                        featuresMutex.withLock {
-                            features.removeAll { it.id == updateInfo.id }
-                        }
-                    }
-                    notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_DELETED)
-                }
+                FeatureUpdateType.DELETED -> onDeleted(updateInfo)
             }
         }
+    }
+
+    private suspend fun onCreated(updateInfo: FeatureUpdateInfo) {
+        val created = featureService.getByIdCompiled(updateInfo.id)
+        featuresMutex.withLock {
+            features.add(created)
+        }
+        notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_CREATED)
+    }
+
+    private suspend fun onCodeUpdated(updateInfo: FeatureUpdateInfo) {
+        val updated = featureService.getByIdCompiled(updateInfo.id)
+        featuresMutex.withLock {
+            val index = features.indexOfFirst { it.id == updateInfo.id }
+            if (index != -1) features[index] = updated else features.add(updated)
+        }
+        notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_UPDATED)
+    }
+
+    private suspend fun onDeleted(updateInfo: FeatureUpdateInfo) {
+        val exists = featureService.existsById(updateInfo.id)
+        if (!exists) {
+            featuresMutex.withLock {
+                features.removeAll { it.id == updateInfo.id }
+            }
+        }
+        notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_DELETED)
     }
 }
