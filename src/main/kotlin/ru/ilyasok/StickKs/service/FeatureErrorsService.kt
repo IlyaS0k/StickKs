@@ -20,13 +20,10 @@ class FeatureErrorsService(
         return featureErrorsRepository.findAllByFeatureId(id, limit)
     }
 
-    suspend fun updateFeatureErrors(featureId: UUID, trace: String): FeatureErrorsModel? {
-        try {
-            featureErrorsRepository.insertFeatureError(UUID.randomUUID(), featureId, trace, Instant.now())
-            logger.info("Successfully updated feature error info, featureID: $featureId")
-        } catch (e: Exception) {
-            logger.error(e.message, e)
-        }
-        return null
+    suspend fun updateFeatureErrors(featureId: UUID, trace: String) = try {
+        featureErrorsRepository.insertFeatureError(UUID.randomUUID(), featureId, trace, Instant.now())
+        logger.info("Successfully updated feature error info, featureID: $featureId")
+    } catch (e: Exception) {
+        logger.error(e.message, e)
     }
 }
