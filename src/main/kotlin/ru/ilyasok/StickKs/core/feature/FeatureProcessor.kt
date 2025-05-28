@@ -1,4 +1,4 @@
-package ru.ilyasok.StickKs.dsl
+package ru.ilyasok.StickKs.core.feature
 
 import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.CoroutineName
@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.core.context.EventContext
 import ru.ilyasok.StickKs.core.event.TimerEvent
 import ru.ilyasok.StickKs.core.event.queue.EventQueue
-import ru.ilyasok.StickKs.core.feature.FeatureManager
+import ru.ilyasok.StickKs.dsl.Feature
+import ru.ilyasok.StickKs.dsl.FeatureMeta
 import ru.ilyasok.StickKs.model.FeatureStatus
 import ru.ilyasok.StickKs.model.NotificationType
 import ru.ilyasok.StickKs.service.FeatureErrorsService
@@ -110,7 +111,11 @@ class FeatureProcessor(
                                     featureService.updateMeta(feature.id, updatedMeta!!)
                                     logger.info("After update meta")
                                 } catch (e: Throwable) {
-                                    logger.error("Failed to update feature {} meta after processing", feature.idName(), e)
+                                    logger.error(
+                                        "Failed to update feature {} meta after processing",
+                                        feature.idName(),
+                                        e
+                                    )
                                 }
                             }
                         }
