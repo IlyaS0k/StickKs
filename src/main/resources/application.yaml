@@ -39,5 +39,8 @@ logging:
   level:
     flyway: DEBUG
 
-dsl-dependencies: "src/main/resources/dsl/dependencies"
-
+stickks:
+  dsl-dependencies: "src/main/resources/dsl/dependencies"
+  features:
+    management:
+      fetch-updates-strategy: DEFAULT

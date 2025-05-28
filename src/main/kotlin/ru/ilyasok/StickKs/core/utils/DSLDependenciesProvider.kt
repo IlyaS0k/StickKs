@@ -10,7 +10,7 @@ import java.util.UUID
 
 @Component
 class DSLDependenciesProvider(
-    @param:Value("\${dsl-dependencies}")
+    @param:Value("\${stickks.dsl-dependencies}")
     private val dslDependenciesPath: String,
 ) {
     private val dslFeatureAnnotation = FeatureDSL::class.java.name
