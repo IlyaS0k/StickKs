@@ -74,12 +74,7 @@ class FeatureManager(
     suspend fun getFeatures(): List<Feature> {
         waitWhileDisabled()
         mutex.withLock {
-            featureService.getMetaForAll(features.map { it.id }).collect { (id, meta) ->
-                val index = features.indexOfFirst { it.id == id }
-                assert(index >= 0) { "Illegal update meta result" }
-                features[index] = features[index].copy(meta = meta)
-            }
-            return features.filter { it.isEnabled() && it.control() }
+            return features
         }
     }
 
