@@ -19,9 +19,10 @@ import java.util.concurrent.atomic.AtomicReference
 
 @Component
 class FeatureManager(
-    private val featureService: FeatureService,
-    private val featureUpdatesQueue: FeatureUpdatesQueue,
-    private val notificationService: NotificationService
+    fetchUpdatesStrategyProvider: FetchUpdatesStrategyProvider,
+    internal val featureService: FeatureService,
+    internal val featureUpdatesQueue: FeatureUpdatesQueue,
+    internal val notificationService: NotificationService,
 ) {
 
     private val features: MutableList<Feature> = mutableListOf()
@@ -30,6 +31,7 @@ class FeatureManager(
     private val statusChangedSignal = CompletableDeferred<Unit>()
     private var fetchUpdatesJob: Job? = null
     private val fetchJobMutex = Mutex()
+    val fetchUpdatesStrategy = fetchUpdatesStrategyProvider.provideFor(this)
 
     fun disable() {
         if (status.get() == AvailabilityStatus.DISABLED) return
@@ -56,13 +58,7 @@ class FeatureManager(
             fetchJobMutex.withLock {
                 if (fetchUpdatesJob == null || fetchUpdatesJob?.isActive == false) {
                     fetchUpdatesJob = launch(CoroutineName("FetchUpdatesCoro")) {
-                        DefaultFetchUpdatesStrategy(
-                            featureUpdatesQueue = featureUpdatesQueue,
-                            featuresMutex = mutex,
-                            features = features,
-                            featureService = featureService,
-                            notificationService = notificationService
-                        ).loop()
+                        fetchUpdatesStrategy.loop()
                     }
                 }
             }
