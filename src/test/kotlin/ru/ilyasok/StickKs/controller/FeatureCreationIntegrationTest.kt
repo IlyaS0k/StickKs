@@ -15,8 +15,8 @@ class FeatureCreationIntegrationTest(
         val featureSourceCode = """
             feature {
                 name = "delete msg"
-                withTimeout {        afterStart = 0.minutes
-                    timeout = 60.minutes    }
+                periodically {        afterStart = 0.minutes
+                    period = 60.minutes    }
                 onEvent {
                     newTelegramMessage {
                         withCondition { message ->                listOf("ilyaS0k", "natalia_sharshakova").contains(message.sender.usernames.editableUsername)

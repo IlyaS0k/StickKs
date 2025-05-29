@@ -4,18 +4,18 @@ import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
-class WithTimeoutAvailabilityBlock(
+class WithTimePeriodAvailabilityBlock(
     val afterStart: Duration,
-    val timeout: Duration?,
+    val period: Duration?,
     val limit: Long
 ) : ExecutionControlBlock() {
 
     override fun control(meta: FeatureMeta): Boolean {
         val now = Instant.now()
         if (limit <= meta.successExecutionsAmount) return false
-        if (timeout != null &&
+        if (period != null &&
             meta.lastSuccessExecutionAt != null &&
-            meta.lastSuccessExecutionAt.plus(timeout.toJavaDuration()).isAfter(now)
+            meta.lastSuccessExecutionAt.plus(period.toJavaDuration()).isAfter(now)
         ) return false
         if (meta.lastSuccessExecutionAt == null &&
             meta.createdAt.plus(afterStart.toJavaDuration()).isAfter(now)
@@ -24,20 +24,20 @@ class WithTimeoutAvailabilityBlock(
     }
 }
 
-class WithTimeoutAvailabilityBlockBuilder {
+class WithTimePeriodAvailabilityBlockBuilder {
     var afterStart: Duration = Duration.ZERO
-    var timeout: Duration = Duration.ZERO
+    var period: Duration = Duration.ZERO
     var limit: Long = Long.MAX_VALUE
 
-    fun build(): WithTimeoutAvailabilityBlock {
+    fun build(): WithTimePeriodAvailabilityBlock {
         require(limit > 0) { "limit is not greater than 0" }
-        return WithTimeoutAvailabilityBlock(afterStart = afterStart, timeout = timeout, limit = limit)
+        return WithTimePeriodAvailabilityBlock(afterStart = afterStart, period = period, limit = limit)
     }
 }
 
 @FeatureDSL
-fun FeatureBlockBuilder.withTimeout(block: WithTimeoutAvailabilityBlockBuilder.() -> Unit): WithTimeoutAvailabilityBlock {
-    val a = WithTimeoutAvailabilityBlockBuilder().apply(block).build()
+fun FeatureBlockBuilder.periodically(block: WithTimePeriodAvailabilityBlockBuilder.() -> Unit): WithTimePeriodAvailabilityBlock {
+    val a = WithTimePeriodAvailabilityBlockBuilder().apply(block).build()
     this.executionControl = a
     return a
 }
