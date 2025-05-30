@@ -1,7 +1,6 @@
 package ru.ilyasok.StickKs.dsl
 
 class OnEventBlock(val event: EventBlock<*>)
-
 class OnEventBlockBuilder() {
     lateinit var event: EventBlock<*>
 

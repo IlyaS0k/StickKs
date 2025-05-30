@@ -6,14 +6,14 @@ import kotlin.time.toJavaDuration
 
 class WithTimePeriodAvailabilityBlock(
     val afterStart: Duration,
-    val period: Duration?,
+    val period: Duration,
     val limit: Long
 ) : ExecutionControlBlock() {
 
     override fun control(meta: FeatureMeta): Boolean {
         val now = Instant.now()
         if (limit <= meta.successExecutionsAmount) return false
-        if (period != null &&
+        if (
             meta.lastSuccessExecutionAt != null &&
             meta.lastSuccessExecutionAt.plus(period.toJavaDuration()).isAfter(now)
         ) return false

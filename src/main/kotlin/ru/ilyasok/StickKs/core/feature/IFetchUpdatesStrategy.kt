@@ -5,6 +5,8 @@ import kotlin.coroutines.cancellation.CancellationException
 
 interface IFetchUpdatesStrategy {
 
+    fun name(): String
+
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java)
     }

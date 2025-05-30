@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service
 import ru.ilyasok.StickKs.core.utils.DSLDependenciesProvider
 import ru.ilyasok.StickKs.dsl.FeatureBlock
 import ru.ilyasok.StickKs.model.FeatureStatus
+import ru.ilyasok.StickKs.model.OperationResult
 import ru.ilyasok.StickKs.repository.IFeatureRepository
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -63,13 +64,15 @@ class FeatureCompilationService(
 
     }
 
-    data class CompilationResult(
-        val success: Boolean,
+    class CompilationResult(
         val featureBlock: FeatureBlock? = null,
-        val error: Throwable? = null
-    ) {
+        success: Boolean,
+        error: Throwable? = null
+    ) : OperationResult(success, error) {
         init {
-            require(if (success) featureBlock != null && error == null else featureBlock == null && error != null)
+            require(if (success) featureBlock != null && error == null else featureBlock == null && error != null) {
+                "Failed to construct CompilationResult"
+            }
         }
     }
 
@@ -109,6 +112,7 @@ class FeatureCompilationService(
             val compilationOutputStream = PrintStream(ByteArrayOutputStream())
             val exitCode = K2JVMCompiler().exec(compilationOutputStream, *args.toArgumentStrings().toTypedArray())
             if (exitCode != ExitCode.OK) {
+                logger.debug("Feature compilation error\n: {}", compilationOutputStream)
                 val compilationError = RuntimeException("$exitCode : $compilationOutputStream")
                 if (id != null) runBlocking {
                     if (markBroken) setBroken(id)
@@ -120,14 +124,14 @@ class FeatureCompilationService(
             val clazz = classLoader.loadClass(classToLoad)
             val method = clazz.getDeclaredMethod(COMPILED_METHOD_NAME)
             val feature = method.invoke(null) as FeatureBlock
-            logger.debug("Successfully compiled feature\n: $featureCode")
+            logger.debug("Successfully compiled feature(id = {})\n: {}", id, featureCode)
             return CompilationResult(success = true, featureBlock = feature)
         } catch (error: InvocationTargetException) {
             val e = error.targetException
-            logger.info("Incorrect DSL syntax\n: $featureCode", e)
+            logger.info("Incorrect DSL syntax(feature id = $id)\n: $featureCode", e)
             return CompilationResult(success = false, error = e)
         } catch (e: Throwable) {
-            logger.info("Error while compiling feature\n: $featureCode", e)
+            logger.info("Error while compiling feature(feature id = $id)\n: $featureCode", e)
             return CompilationResult(success = false, error = e)
         } finally {
             compilationOutputDir.listFiles()?.forEach {

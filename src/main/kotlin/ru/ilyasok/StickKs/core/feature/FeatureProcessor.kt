@@ -8,11 +8,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.core.context.EventContext
-import ru.ilyasok.StickKs.core.event.TimerEvent
 import ru.ilyasok.StickKs.core.event.queue.EventQueue
 import ru.ilyasok.StickKs.dsl.Feature
 import ru.ilyasok.StickKs.dsl.FeatureMeta
@@ -82,7 +81,7 @@ class FeatureProcessor(
                     val meta = featureService.getMeta(f.id)
                     val feature = f.copy(meta = meta)
                     if (!feature.isEnabled() || !feature.control()) return@process
-                    withTimeoutOrNull(WAITING_FOR_JOB) {
+                    withTimeout(WAITING_FOR_JOB) {
                         try {
                             feature.takeIf { feature -> feature.checkEvent(eventContext) }
                                 ?.takeIf { feature -> feature.checkCondition(eventContext) }
@@ -128,17 +127,17 @@ class FeatureProcessor(
     }
 
     private fun <T : EventContext> Feature.checkEvent(eventContext: T): Boolean {
-        val onEvent = this.feature.onEvent ?: return eventContext is TimerEvent && eventContext.featureId == this.id
+        val onEvent = this.feature.onEvent ?: return eventContext is ActivateFeatureEvent && eventContext.featureId == this.id
         return onEvent.event.contextType == eventContext::class
     }
 
     private suspend fun <T : EventContext> Feature.checkCondition(eventContext: T): Boolean {
-        val onEvent = this.feature.onEvent ?: return this.feature.runBlock!!.checkCondition()
+        val onEvent = this.feature.onEvent ?: return this.feature.triggerBlock!!.checkCondition()
         return onEvent.event.checkCondition(eventContext)
     }
 
     private suspend fun <T : EventContext> Feature.execute(eventContext: T) {
-        val onEvent = this.feature.onEvent ?: return this.feature.runBlock!!.execute()
+        val onEvent = this.feature.onEvent ?: return this.feature.triggerBlock!!.execute()
         return onEvent.event.execute(eventContext)
     }
 }

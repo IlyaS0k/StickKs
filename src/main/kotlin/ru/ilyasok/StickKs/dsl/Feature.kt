@@ -17,11 +17,13 @@ data class Feature(
 
     suspend fun process(block: suspend (Feature) -> Unit) = processingMutex.withLock { block(this) }
 
-    fun control() = feature.executionControl.control(meta)
+    fun control() = if (!isActivated()) feature.executionControl.control(meta) else true
 
     fun isEnabled() = !meta.disabled
 
     fun idName() = "[$name| $id]"
+
+    fun isActivated() = feature.activated
 }
 
 data class FeatureMeta(

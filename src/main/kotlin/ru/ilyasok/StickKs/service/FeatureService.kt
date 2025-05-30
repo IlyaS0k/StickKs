@@ -59,11 +59,14 @@ class FeatureService(
     }
 
     @Transactional
-    suspend fun delete(id: UUID, reqId: UUID) {
+    suspend fun delete(id: UUID) {
         if (featureRepository.existsById(id)) featureRepository.deleteById(id)
-        featureUpdatesQueue.add(id, reqId, FeatureUpdateType.DELETED)
     }
 
+    suspend fun delete(id: UUID, reqId: UUID) {
+        self.delete(id)
+        featureUpdatesQueue.add(id, reqId, FeatureUpdateType.DELETED)
+    }
 
     @Transactional
     suspend fun update(id: UUID, featureCode: String, compiledFeature: FeatureBlock): FeatureModel {

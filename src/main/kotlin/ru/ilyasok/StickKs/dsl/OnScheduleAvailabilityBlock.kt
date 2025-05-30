@@ -1,17 +1,26 @@
 package ru.ilyasok.StickKs.dsl
 
+import com.cronutils.model.CronType
+import com.cronutils.model.definition.CronDefinitionBuilder
+import com.cronutils.model.time.ExecutionTime
+import com.cronutils.parser.CronParser
 import org.springframework.scheduling.support.CronExpression
 import ru.ilyasok.StickKs.core.utils.SpringContext
+import java.time.ZonedDateTime
 
 class OnScheduleAvailabilityBlock(
-    private val cron: String,
-    private val limit: Long
+    val cron: String,
+    val limit: Long
 ) : ExecutionControlBlock() {
     override fun control(meta: FeatureMeta): Boolean {
-        val clock = SpringContext.clock()
         if (meta.successExecutionsAmount >= limit) return false
-        val expression = CronExpression.parse(cron)
-        TODO()
+        val cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX)
+        val parser = CronParser(cronDefinition)
+        val cron = parser.parse(cron)
+        val executionTime = ExecutionTime.forCron(cron)
+        val now = ZonedDateTime.now().withNano(0)
+
+        return executionTime.isMatch(now)
     }
 }
 
@@ -31,6 +40,7 @@ class OnScheduleAvailabilityBlockBuilder {
     }
 }
 
+@FeatureDSL
 fun FeatureBlockBuilder.schedule(block: OnScheduleAvailabilityBlockBuilder.() -> Unit) : OnScheduleAvailabilityBlock {
     val ab = OnScheduleAvailabilityBlockBuilder().apply(block).build()
     this.executionControl = ab

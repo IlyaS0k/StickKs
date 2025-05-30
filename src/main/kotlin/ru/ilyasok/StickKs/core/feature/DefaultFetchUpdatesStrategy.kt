@@ -1,27 +1,27 @@
 package ru.ilyasok.StickKs.core.feature
 
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
-import ru.ilyasok.StickKs.dsl.Feature
+import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.model.NotificationType
-import ru.ilyasok.StickKs.service.FeatureService
-import ru.ilyasok.StickKs.service.NotificationService
+import ru.ilyasok.StickKs.service.FeatureErrorsService
 
+@Component
 class DefaultFetchUpdatesStrategy(
-    private val featureUpdatesQueue: FeatureUpdatesQueue,
-    private val featuresMutex: Mutex,
-    private val features: MutableList<Feature>,
-    private val featureService: FeatureService,
-    private val notificationService: NotificationService
+    val featureManager: FeatureManager,
+    val featureErrorsService: FeatureErrorsService
 ) : IFetchUpdatesStrategy {
+
+    private val notificationService = featureManager.notificationService
+    private val featureService = featureManager.featureService
+    private val fetchUpdatesQueue = featureManager.featureUpdatesQueue
+    override fun name(): String = "DEFAULT"
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java)
     }
 
     override suspend fun fetch() {
-        featureUpdatesQueue.get().collect { updateInfo ->
+        fetchUpdatesQueue.get().collect { updateInfo ->
             when (updateInfo.updateType) {
                 FeatureUpdateType.CODE_UPDATED -> onCodeUpdated(updateInfo)
 
@@ -32,28 +32,36 @@ class DefaultFetchUpdatesStrategy(
         }
     }
 
+    private suspend fun notifyOnErrors(featureUpdate: FeatureUpdateInfo, block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: Throwable) {
+            notificationService.notify(featureUpdate.id, null, NotificationType.FEATURE_UNSTABLE)
+            featureErrorsService.updateFeatureErrors(featureUpdate.id, e.stackTraceToString())
+        }
+    }
+
     private suspend fun onCreated(updateInfo: FeatureUpdateInfo) {
         val created = featureService.getByIdCompiled(updateInfo.id)
-        featuresMutex.withLock {
-            features.add(created)
+        notifyOnErrors(updateInfo) {
+            featureManager.applyNew(created)
+            notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_CREATED)
         }
-        notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_CREATED)
     }
 
     private suspend fun onCodeUpdated(updateInfo: FeatureUpdateInfo) {
-        val updated = featureService.getByIdCompiled(updateInfo.id)
-        featuresMutex.withLock {
-            val index = features.indexOfFirst { it.id == updateInfo.id }
-            if (index != -1) features[index] = updated else features.add(updated)
+        notifyOnErrors(updateInfo) {
+            val updated = featureService.getByIdCompiled(updateInfo.id)
+            featureManager.apply(updated)
+            notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_UPDATED)
         }
-        notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_UPDATED)
     }
 
     private suspend fun onDeleted(updateInfo: FeatureUpdateInfo) {
         val exists = featureService.existsById(updateInfo.id)
         if (!exists) {
-            featuresMutex.withLock {
-                features.removeAll { it.id == updateInfo.id }
+            notifyOnErrors(updateInfo) {
+                featureManager.delete(updateInfo.id)
             }
         }
         notificationService.notify(updateInfo.id, updateInfo.reqId, NotificationType.FEATURE_DELETED)
