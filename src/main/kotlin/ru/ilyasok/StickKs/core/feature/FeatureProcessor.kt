@@ -128,7 +128,7 @@ class FeatureProcessor(
 
     private fun <T : EventContext> Feature.checkEvent(eventContext: T): Boolean {
         val onEvent = this.feature.onEvent ?: return eventContext is ActivateFeatureEvent && eventContext.featureId == this.id
-        return onEvent.event.contextType == eventContext::class
+        return onEvent.event.eventContext() == eventContext::class
     }
 
     private suspend fun <T : EventContext> Feature.checkCondition(eventContext: T): Boolean {

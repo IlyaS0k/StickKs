@@ -15,8 +15,8 @@ class TestController(
 ) {
 
     @GetMapping()
-    suspend fun test(): String? {
-        deepseekClient.ask("привет, как дела").collect { println(it) }
-        return "wstest"
+    suspend fun test(): Unit {
+
+        return
     }
 }

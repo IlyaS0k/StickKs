@@ -36,7 +36,7 @@ class WithTimePeriodAvailabilityBlockBuilder {
 }
 
 @FeatureDSL
-fun FeatureBlockBuilder.periodically(block: WithTimePeriodAvailabilityBlockBuilder.() -> Unit): WithTimePeriodAvailabilityBlock {
+fun FeatureBlockBuilder<*>.periodically(block: WithTimePeriodAvailabilityBlockBuilder.() -> Unit): WithTimePeriodAvailabilityBlock {
     val a = WithTimePeriodAvailabilityBlockBuilder().apply(block).build()
     this.executionControl = a
     return a

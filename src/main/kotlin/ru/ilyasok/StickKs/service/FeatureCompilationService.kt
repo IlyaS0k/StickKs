@@ -44,6 +44,8 @@ class FeatureCompilationService(
 
         private const val OUTPUT_DIR_NAME = "feature-compilation-output"
 
+        private const val COMPILATOR_TARGET_JVM = "17"
+
         private val EXCLUDE_CP_EXTENSIONS = listOf("css", "js")
 
         private fun clearCompilationOutputDir() {
@@ -108,12 +110,15 @@ class FeatureCompilationService(
                 freeArgs = listOf(sourceFile.absolutePath)
                 destination = compilationOutputDir.absolutePath
                 classpath = compilerClassPath()
+                jvmTarget = COMPILATOR_TARGET_JVM
+
             }
-            val compilationOutputStream = PrintStream(ByteArrayOutputStream())
+            val compilationByteStream = ByteArrayOutputStream()
+            val compilationOutputStream = PrintStream(compilationByteStream)
             val exitCode = K2JVMCompiler().exec(compilationOutputStream, *args.toArgumentStrings().toTypedArray())
             if (exitCode != ExitCode.OK) {
-                logger.debug("Feature compilation error\n: {}", compilationOutputStream)
-                val compilationError = RuntimeException("$exitCode : $compilationOutputStream")
+                logger.debug("Feature compilation error\n: {}", compilationByteStream.toString())
+                val compilationError = RuntimeException("$exitCode : $compilationByteStream")
                 if (id != null) runBlocking {
                     if (markBroken) setBroken(id)
                     featureErrorsService.updateFeatureErrors(id, compilationError.stackTraceToString())
