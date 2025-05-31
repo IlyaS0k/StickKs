@@ -1,9 +1,9 @@
 package ru.ilyasok.StickKs.feature.telegram
 
-import ru.ilyasok.StickKs.dsl.FeatureDSL
+import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 import ru.ilyasok.StickKs.tdapi.TdApi
 
-@FeatureDSL
+@FeatureDslComponent
 data class TgNewTextMessageContext(
     val id: Long,
     val chatId: Long,

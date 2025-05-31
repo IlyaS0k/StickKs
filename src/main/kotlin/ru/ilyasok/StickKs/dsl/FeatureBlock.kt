@@ -46,7 +46,7 @@ class FeatureBlockBuilder<E: ExecutionContext> {
     }
 }
 
-@FeatureDSL
+@FeatureDslComponent
 fun<E: ExecutionContext> feature(block: FeatureBlockBuilder<E>.() -> Unit): FeatureBlock {
     return FeatureBlockBuilder<E>().apply(block).build()
 }

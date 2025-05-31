@@ -2,7 +2,7 @@ package ru.ilyasok.StickKs.dsl.onevent
 
 import ru.ilyasok.StickKs.core.context.ExecutionContext
 import ru.ilyasok.StickKs.dsl.FeatureBlockBuilder
-import ru.ilyasok.StickKs.dsl.FeatureDSL
+import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 
 class OnEventBlock<E: ExecutionContext>(val event: EventBlock<*, E>)
 
@@ -17,7 +17,7 @@ class OnEventBlockBuilder<E: ExecutionContext>() {
     }
 }
 
-@FeatureDSL
+@FeatureDslComponent
 fun <E: ExecutionContext> FeatureBlockBuilder<E>.onEvent(block: OnEventBlockBuilder<E>.() -> Unit): OnEventBlock<E> {
     val ecp = this.executionContextProvider
     val blockWithSetContext: OnEventBlockBuilder<E>.() -> Unit = {

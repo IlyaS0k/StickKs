@@ -1,17 +1,17 @@
 package ru.ilyasok.StickKs.feature.telegram.functions
 
 import ru.ilyasok.StickKs.core.utils.SpringContext
-import ru.ilyasok.StickKs.dsl.FeatureDSL
+import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 import ru.ilyasok.StickKs.feature.telegram.TgNewTextMessageContext
 
-@FeatureDSL
+@FeatureDslComponent
 suspend fun deleteMessage(chatId: Long? = null, messageId: Long? = null, forAllMembers: Boolean = true) {
     assert(chatId != null && messageId != null) { "chatId and messageId must not be null" }
     val tgFunctions = SpringContext.getBean(TgFunctions::class.java)
     tgFunctions.deleteMessage(chatId = chatId!!, messageId = messageId!!, revoke = forAllMembers)
 }
 
-@FeatureDSL
+@FeatureDslComponent
 suspend fun deleteMessage(message: TgNewTextMessageContext, forAllMembers: Boolean = true) {
     val tgFunctions = SpringContext.getBean(TgFunctions::class.java)
     tgFunctions.deleteMessage(chatId = message.chatId, messageId = message.id, revoke = forAllMembers)

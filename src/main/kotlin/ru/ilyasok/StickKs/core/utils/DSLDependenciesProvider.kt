@@ -4,7 +4,7 @@ import io.github.classgraph.ClassGraph
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import ru.ilyasok.StickKs.dsl.FeatureDSL
+import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 import java.io.File
 import java.util.UUID
 
@@ -13,7 +13,7 @@ class DSLDependenciesProvider(
     @param:Value("\${stickks.dsl-dependencies}")
     private val dslDependenciesPath: String,
 ) {
-    private val dslFeatureAnnotation = FeatureDSL::class.java.name
+    private val dslFeatureAnnotation = FeatureDslComponent::class.java.name
 
     private val dependencies: MutableList<String> = if (File(dslDependenciesPath).exists()) {
         File(dslDependenciesPath).readLines().toMutableList()

@@ -1,6 +1,6 @@
 package ru.ilyasok.StickKs.feature.telegram.entities
 
-import ru.ilyasok.StickKs.dsl.FeatureDSL
+import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 import ru.ilyasok.StickKs.tdapi.TdApi
 
 data class TgUserIdentification(
@@ -20,7 +20,7 @@ data class TgUserIdentification(
     }
 }
 
-@FeatureDSL
+@FeatureDslComponent
 class TgUserIdentificationBuilder {
     var phone: String? = null
     var username: String? = null
@@ -40,7 +40,7 @@ class TgUserIdentificationBuilder {
     }
 }
 
-@FeatureDSL
+@FeatureDslComponent
 fun user(block: TgUserIdentificationBuilder.() -> Unit): TgUserIdentification {
     return TgUserIdentificationBuilder().apply { block() }.build()
 }

@@ -3,10 +3,10 @@ package ru.ilyasok.StickKs.feature.telegram
 import ru.ilyasok.StickKs.core.context.ExecutionContext
 import ru.ilyasok.StickKs.dsl.onevent.EventBlock
 import ru.ilyasok.StickKs.dsl.onevent.EventBlockBuilder
-import ru.ilyasok.StickKs.dsl.FeatureDSL
+import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 import ru.ilyasok.StickKs.dsl.onevent.OnEventBlockBuilder
 
-@FeatureDSL
+@FeatureDslComponent
 fun<E: ExecutionContext> OnEventBlockBuilder<E>.newTelegramMessage(
     block: EventBlockBuilder<TgNewTextMessageContext, E>.() -> Unit
 ): EventBlock<TgNewTextMessageContext, E> {

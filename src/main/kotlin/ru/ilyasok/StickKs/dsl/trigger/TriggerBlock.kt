@@ -2,7 +2,7 @@ package ru.ilyasok.StickKs.dsl.trigger
 
 import ru.ilyasok.StickKs.core.context.ExecutionContext
 import ru.ilyasok.StickKs.dsl.FeatureBlockBuilder
-import ru.ilyasok.StickKs.dsl.FeatureDSL
+import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 
 
 class TriggerBlock<in E: ExecutionContext>(
@@ -30,19 +30,19 @@ class TriggerBlockBuilder<E : ExecutionContext> {
     }
 }
 
-@FeatureDSL
+@FeatureDslComponent
 fun<E: ExecutionContext> FeatureBlockBuilder<E>.trigger(block: TriggerBlockBuilder<E>.() -> Unit): TriggerBlock<E> {
     val tb = TriggerBlockBuilder<E>().apply(block).build(this.executionContextProvider)
     this.triggerBlock = tb
     return tb
 }
 
-@FeatureDSL
+@FeatureDslComponent
 fun<E: ExecutionContext> TriggerBlockBuilder<E>.execute(execute: suspend E.() -> Unit) {
     this.execute = execute
 }
 
-@FeatureDSL
+@FeatureDslComponent
 fun<E: ExecutionContext> TriggerBlockBuilder<E>.withCondition(condition: suspend E.() -> Boolean) {
     this.condition = condition
 }

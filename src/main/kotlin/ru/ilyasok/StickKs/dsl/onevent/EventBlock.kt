@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 import ru.ilyasok.StickKs.core.context.EventContext
 import ru.ilyasok.StickKs.core.context.ExecutionContext
 import ru.ilyasok.StickKs.core.feature.ActivateFeatureEvent
-import ru.ilyasok.StickKs.dsl.FeatureDSL
+import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 import kotlin.reflect.KClass
 
 open class EventBlock<in T: EventContext, in E: ExecutionContext>(
@@ -59,12 +59,12 @@ class EventBlockBuilder<T: EventContext, E: ExecutionContext>() {
 }
 
 
-@FeatureDSL
+@FeatureDslComponent
 fun<T: EventContext, E: ExecutionContext> EventBlockBuilder<T, E>.execute(execute: suspend E.(T) -> Unit) {
     this.execute = execute
 }
 
-@FeatureDSL
+@FeatureDslComponent
 fun<T: EventContext, E: ExecutionContext> EventBlockBuilder<T, E>.withCondition(condition: suspend E.(T) -> Boolean) {
     this.condition = condition
 }

@@ -40,7 +40,7 @@ class OnScheduleAvailabilityBlockBuilder {
     }
 }
 
-@FeatureDSL
+@FeatureDslComponent
 fun FeatureBlockBuilder<*>.schedule(block: OnScheduleAvailabilityBlockBuilder.() -> Unit) : OnScheduleAvailabilityBlock {
     val ab = OnScheduleAvailabilityBlockBuilder().apply(block).build()
     this.executionControl = ab

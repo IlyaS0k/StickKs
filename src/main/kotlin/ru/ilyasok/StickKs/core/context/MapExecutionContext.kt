@@ -2,7 +2,7 @@ package ru.ilyasok.StickKs.core.context
 
 import ru.ilyasok.StickKs.core.context.ExecutionContext
 
-@ru.ilyasok.StickKs.dsl.FeatureDSL
+@ru.ilyasok.StickKs.dsl.FeatureDslComponent
 class MapExecutionContext(map: Map<String, Any?> = mutableMapOf()) : ExecutionContext() {
     private val contextMap: MutableMap<String, Any?> = map.toMutableMap()
 
@@ -31,7 +31,7 @@ class MapExecutionContextBuilder {
 }
 
 
-@ru.ilyasok.StickKs.dsl.FeatureDSL
+@ru.ilyasok.StickKs.dsl.FeatureDslComponent
 inline fun ru.ilyasok.StickKs.dsl.FeatureBlockBuilder<MapExecutionContext>.contextMap(
     block: MapExecutionContextBuilder.() -> Unit
 ): MapExecutionContext {

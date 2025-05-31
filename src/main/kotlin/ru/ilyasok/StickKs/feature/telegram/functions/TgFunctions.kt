@@ -1,14 +1,14 @@
 package ru.ilyasok.StickKs.feature.telegram.functions
 
-import kotlinx.coroutines.NonCancellable.cancel
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
-import ru.ilyasok.StickKs.dsl.execute
+import ru.ilyasok.StickKs.core.context.contextMap
 import ru.ilyasok.StickKs.dsl.feature
-import ru.ilyasok.StickKs.dsl.onEvent
+import ru.ilyasok.StickKs.dsl.onevent.execute
+import ru.ilyasok.StickKs.dsl.onevent.onEvent
 import ru.ilyasok.StickKs.dsl.periodically
-import ru.ilyasok.StickKs.dsl.schedule
-import ru.ilyasok.StickKs.dsl.trigger
+import ru.ilyasok.StickKs.dsl.trigger.execute
+import ru.ilyasok.StickKs.dsl.trigger.trigger
 import ru.ilyasok.StickKs.feature.telegram.entities.user
 import ru.ilyasok.StickKs.feature.telegram.newTelegramMessage
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
@@ -22,6 +22,35 @@ class TgFunctions(val client: ITgClient) {
         feature {
             name = "Xiao Feature run"
 
+            context = contextMap {
+                "xiao" to "cocka"
+                "one" to 1
+            }
+
+            periodically {
+                afterStart = 3.seconds
+                period = 5.seconds
+            }
+
+            onEvent {
+                newTelegramMessage {
+                    execute {
+                        val context = this
+                        context.put("xiao2" to "cocka2")
+                        println(context.get<String>("xiao2"))
+                    }
+                }
+            }
+        }
+
+        feature {
+            name = "Xiao Feature run"
+
+            context = contextMap {
+                "xiao" to "cocka"
+                "one" to 1
+            }
+
             periodically {
                 afterStart = 3.seconds
                 period = 5.seconds
@@ -29,32 +58,10 @@ class TgFunctions(val client: ITgClient) {
 
             trigger {
                 execute {
-                    sendMessageTo(user { username = "k1ss1k" }) { "Привет" }
-                }
-            }
-        }
-
-        feature {
-            name = "Xiao Feature Scheduled"
-
-            schedule {
-                cron = "* * * * *"
-            }
-
-            trigger {
-                execute {
-                    sendMessageTo(user { username = "k1ss1k" }) { "Привет" }
-                }
-            }
-        }
-
-
-        feature {
-            onEvent {
-                newTelegramMessage {
-                    execute {
-                        println("XIAOAAAAAAAAAAAAAAAAAAAAA")
-                    }
+                    val context = this
+                    context.put("xiao2" to "cocka2")
+                    val v = context.get<String>("xiao")
+                    sendMessageTo(user { username = "k1ss1k" }) { v }
                 }
             }
         }

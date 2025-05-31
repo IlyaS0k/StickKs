@@ -1,7 +1,7 @@
 package ru.ilyasok.StickKs.feature.telegram.functions
 
 import ru.ilyasok.StickKs.core.utils.SpringContext
-import ru.ilyasok.StickKs.dsl.FeatureDSL
+import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 import ru.ilyasok.StickKs.feature.telegram.entities.TgUserIdentification
 
 private fun processTgUserNameAndPhone(name: String?, phone: String?): Pair<String?, String?> {
@@ -10,7 +10,7 @@ private fun processTgUserNameAndPhone(name: String?, phone: String?): Pair<Strin
     return Pair(nameWithoutAt, phoneWithoutPlus)
 }
 
-@FeatureDSL
+@FeatureDslComponent
 suspend fun sendMessageTo(
     phone: String? = null,
     username: String? = null,
@@ -33,7 +33,7 @@ suspend fun sendMessageTo(
     )
 }
 
-@FeatureDSL
+@FeatureDslComponent
 suspend fun sendMessageTo(user: TgUserIdentification, message: () -> String) {
     assert(user.phone != null || user.username != null || user.firstName != null || user.lastName != null) { "All message receiver identification parameters is null" }
     val (nameWithoutAt, phoneWithoutPlus) = processTgUserNameAndPhone(user.username, user.phone)
