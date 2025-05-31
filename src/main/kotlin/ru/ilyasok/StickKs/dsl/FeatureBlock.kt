@@ -13,6 +13,7 @@ class FeatureBlock(
     val activated: Boolean = false
 )
 
+@FeatureDslMarker
 class FeatureBlockBuilder<E: ExecutionContext> {
     var name: String? = null
     var executionControl: ExecutionControlBlock = AlwaysAvailableBlock(Long.MAX_VALUE)

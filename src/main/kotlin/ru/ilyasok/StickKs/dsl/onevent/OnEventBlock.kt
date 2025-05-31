@@ -3,9 +3,11 @@ package ru.ilyasok.StickKs.dsl.onevent
 import ru.ilyasok.StickKs.core.context.ExecutionContext
 import ru.ilyasok.StickKs.dsl.FeatureBlockBuilder
 import ru.ilyasok.StickKs.dsl.FeatureDslComponent
+import ru.ilyasok.StickKs.dsl.FeatureDslMarker
 
 class OnEventBlock<E: ExecutionContext>(val event: EventBlock<*, E>)
 
+@FeatureDslMarker
 class OnEventBlockBuilder<E: ExecutionContext>() {
     var event: EventBlock<*, E>? = null
     lateinit var executionContextProvider: () -> E

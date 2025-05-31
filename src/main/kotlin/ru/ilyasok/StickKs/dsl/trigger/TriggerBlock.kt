@@ -3,6 +3,7 @@ package ru.ilyasok.StickKs.dsl.trigger
 import ru.ilyasok.StickKs.core.context.ExecutionContext
 import ru.ilyasok.StickKs.dsl.FeatureBlockBuilder
 import ru.ilyasok.StickKs.dsl.FeatureDslComponent
+import ru.ilyasok.StickKs.dsl.FeatureDslMarker
 
 
 class TriggerBlock<in E: ExecutionContext>(
@@ -17,6 +18,7 @@ class TriggerBlock<in E: ExecutionContext>(
     suspend fun execute() = execute.invoke(executionContext)
 }
 
+@FeatureDslMarker
 class TriggerBlockBuilder<E : ExecutionContext> {
     var execute: suspend E.() -> Unit = {}
     var condition: suspend E.() -> Boolean = { true }
@@ -38,11 +40,11 @@ fun<E: ExecutionContext> FeatureBlockBuilder<E>.trigger(block: TriggerBlockBuild
 }
 
 @FeatureDslComponent
-fun<E: ExecutionContext> TriggerBlockBuilder<E>.execute(execute: suspend E.() -> Unit) {
+fun<E: ExecutionContext> TriggerBlockBuilder<E>.execute(execute: @FeatureDslMarker suspend E.() -> Unit) {
     this.execute = execute
 }
 
 @FeatureDslComponent
-fun<E: ExecutionContext> TriggerBlockBuilder<E>.withCondition(condition: suspend E.() -> Boolean) {
+fun<E: ExecutionContext> TriggerBlockBuilder<E>.withCondition(condition: @FeatureDslMarker suspend E.() -> Boolean) {
     this.condition = condition
 }

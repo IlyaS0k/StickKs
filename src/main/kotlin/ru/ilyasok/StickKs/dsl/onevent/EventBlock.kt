@@ -4,9 +4,11 @@ import org.slf4j.LoggerFactory
 import ru.ilyasok.StickKs.core.context.EventContext
 import ru.ilyasok.StickKs.core.context.ExecutionContext
 import ru.ilyasok.StickKs.core.feature.ActivateFeatureEvent
+import ru.ilyasok.StickKs.dsl.FeatureDslMarker
 import ru.ilyasok.StickKs.dsl.FeatureDslComponent
 import kotlin.reflect.KClass
 
+@FeatureDslMarker
 open class EventBlock<in T: EventContext, in E: ExecutionContext>(
     val condition: suspend E.(T) -> Boolean,
     val execute: suspend E.(T) -> Unit,
@@ -27,7 +29,7 @@ open class EventBlock<in T: EventContext, in E: ExecutionContext>(
     suspend fun checkCondition(eventContext: Any?): Boolean {
         if (eventContext != null && eventContext::class == eventContextType) {
             return condition.invoke(executionContext, eventContext as T).also { res ->
-                logger.debug("Checking condition for event ${System.identityHashCode(eventContext)}; result is $res")
+                logger.debug("Checking condition for event ${System.identityHashCode(eventContext)};Result is $res")
             }
         }
         return false
@@ -43,6 +45,7 @@ open class EventBlock<in T: EventContext, in E: ExecutionContext>(
     }
 }
 
+@FeatureDslMarker
 class EventBlockBuilder<T: EventContext, E: ExecutionContext>() {
     var execute: suspend E.(T) -> Unit = {}
 
@@ -58,13 +61,16 @@ class EventBlockBuilder<T: EventContext, E: ExecutionContext>() {
     }
 }
 
-
 @FeatureDslComponent
-fun<T: EventContext, E: ExecutionContext> EventBlockBuilder<T, E>.execute(execute: suspend E.(T) -> Unit) {
+fun<T: EventContext, E: ExecutionContext> EventBlockBuilder<T, E>.execute(
+    execute: @FeatureDslMarker suspend E.(T) -> Unit
+) {
     this.execute = execute
 }
 
 @FeatureDslComponent
-fun<T: EventContext, E: ExecutionContext> EventBlockBuilder<T, E>.withCondition(condition: suspend E.(T) -> Boolean) {
+fun<T: EventContext, E: ExecutionContext> EventBlockBuilder<T, E>.withCondition(
+    condition: @FeatureDslMarker suspend E.(T) -> Boolean
+) {
     this.condition = condition
 }

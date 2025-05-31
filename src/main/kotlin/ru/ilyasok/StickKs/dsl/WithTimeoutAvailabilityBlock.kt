@@ -24,6 +24,7 @@ class WithTimePeriodAvailabilityBlock(
     }
 }
 
+@FeatureDslMarker
 class WithTimePeriodAvailabilityBlockBuilder {
     var afterStart: Duration = Duration.ZERO
     var period: Duration = Duration.ZERO
