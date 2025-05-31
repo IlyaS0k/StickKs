@@ -16,7 +16,7 @@ class MapExecutionContext(map: Map<String, Any?> = mutableMapOf()) : ExecutionCo
 
     @Suppress("UNCHECKED_CAST")
     fun <T> get(key: String): T {
-        return contextMap[key] as? T ?: throw RuntimeException("failed to get value by $key")
+        return contextMap[key] as? T ?: throw RuntimeException("Failed to get value by $key")
     }
 }
 
@@ -32,7 +32,7 @@ class MapExecutionContextBuilder {
 
 
 @ru.ilyasok.StickKs.dsl.FeatureDSL
-inline fun ru.ilyasok.StickKs.dsl.FeatureBlockBuilder<MapExecutionContext>.mapContext(
+inline fun ru.ilyasok.StickKs.dsl.FeatureBlockBuilder<MapExecutionContext>.contextMap(
     block: MapExecutionContextBuilder.() -> Unit
 ): MapExecutionContext {
     val ec = MapExecutionContextBuilder().apply(block).build()
