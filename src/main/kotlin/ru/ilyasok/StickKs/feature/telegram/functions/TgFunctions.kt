@@ -6,7 +6,7 @@ import ru.ilyasok.StickKs.core.context.contextMap
 import ru.ilyasok.StickKs.dsl.feature
 import ru.ilyasok.StickKs.dsl.onevent.execute
 import ru.ilyasok.StickKs.dsl.onevent.onEvent
-import ru.ilyasok.StickKs.dsl.periodically
+import ru.ilyasok.StickKs.dsl.periodic
 import ru.ilyasok.StickKs.dsl.trigger.execute
 import ru.ilyasok.StickKs.dsl.trigger.trigger
 import ru.ilyasok.StickKs.feature.telegram.entities.user
@@ -27,7 +27,7 @@ class TgFunctions(val client: ITgClient) {
                 "one" to 1
             }
 
-            periodically {
+            periodic {
                 afterStart = 3.seconds
                 period = 5.seconds
             }
@@ -51,7 +51,7 @@ class TgFunctions(val client: ITgClient) {
                 "one" to 1
             }
 
-            periodically {
+            periodic {
                 afterStart = 3.seconds
                 period = 5.seconds
             }

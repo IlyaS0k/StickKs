@@ -15,7 +15,7 @@ class FeatureCreationIntegrationTest(
         val featureSourceCode = """
             feature {
                 name = "delete msg"
-                periodically {        afterStart = 0.minutes
+                periodic {        afterStart = 0.minutes
                     period = 60.minutes    }
                 onEvent {
                     newTelegramMessage {
