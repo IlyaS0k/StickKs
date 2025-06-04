@@ -13,9 +13,9 @@ import org.springframework.stereotype.Service
 @Profile("!test")
 class DeepseekClient(private val chatModel: DeepSeekChatModel) {
 
-    fun ask(message: String): Flow<ChatResponse> {
+    suspend fun ask(message: String): ChatResponse? {
         val prompt = Prompt(UserMessage(message));
-        return chatModel.stream(prompt).asFlow()
+        return chatModel.call(prompt)
     }
 
 }

@@ -1,14 +1,20 @@
 package ru.ilyasok.StickKs.feature.telegram.functions
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import ru.ilyasok.StickKs.core.context.contextMap
+import ru.ilyasok.StickKs.dsl.always
 import ru.ilyasok.StickKs.dsl.feature
 import ru.ilyasok.StickKs.dsl.onevent.execute
 import ru.ilyasok.StickKs.dsl.onevent.onEvent
+import ru.ilyasok.StickKs.dsl.onevent.withCondition
 import ru.ilyasok.StickKs.dsl.periodic
 import ru.ilyasok.StickKs.dsl.trigger.execute
 import ru.ilyasok.StickKs.dsl.trigger.trigger
+import ru.ilyasok.StickKs.feature.deepseek.client.DeepseekClient
+import ru.ilyasok.StickKs.feature.deepseek.functions.askDeepseek
 import ru.ilyasok.StickKs.feature.telegram.entities.user
 import ru.ilyasok.StickKs.feature.telegram.newTelegramMessage
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
@@ -17,27 +23,36 @@ import kotlin.time.Duration.Companion.seconds
 
 @Component
 @Profile("!test")
-class TgFunctions(val client: ITgClient) {
-    fun test() {
+@ConditionalOnBean(DeepseekClient::class)
+class TgFunctions(
+    val client: ITgClient,
+    val deepseekClient: DeepseekClient
+) {
+    fun examples() {
         feature {
-            name = "Xiao Feature run"
+            name = "Deepseek answer"
 
             context = contextMap {
-                "xiao" to "cocka"
-                "one" to 1
+                "user" to "k1ss1k"
             }
 
-            periodic {
-                afterStart = 3.seconds
-                period = 5.seconds
-            }
+            always()
 
             onEvent {
                 newTelegramMessage {
-                    execute {
-                        val context = this
-                        context.put("xiao2" to "cocka2")
-                        println(context.get<String>("xiao2"))
+                    withCondition { message ->
+                        message.sender.name == this.get<String>("user")
+                    }
+
+                    execute { message ->
+                        val replyTo = this.get<String>("user")
+                        val answer = askDeepseek {
+                            """
+                                Мне пишет пользователь ${message.sender.name}.
+                                Представься моим автоответчиком и сообщи что я занят.
+                            """
+                        }
+                        sendMessageTo(user { username = replyTo } ) { answer }
                     }
                 }
             }

@@ -10,6 +10,8 @@ import ru.ilyasok.StickKs.core.event.source.IEventSource
 import ru.ilyasok.StickKs.tdapi.TdApi
 import ru.ilyasok.StickKs.tdapi.client.abstraction.ITgClient
 import ru.ilyasok.StickKs.feature.telegram.TgNewTextMessageContext
+import ru.ilyasok.StickKs.feature.telegram.entities.SenderInfo
+import ru.ilyasok.StickKs.feature.telegram.entities.toSenderInfo
 import ru.ilyasok.StickKs.tdapi.handler.abstraction.ITdHandler
 
 @Component
@@ -40,7 +42,7 @@ class TdFeatureHandler(@Lazy private val client: ITgClient) : ITdHandler, IEvent
                 val content = tgEvent.message.content as TdApi.MessageText
                 TgNewTextMessageContext(
                     text = content.text.text,
-                    sender = client.getUser(sender.userId).handle { onSuccess = { it } } ?: TdApi.User(),
+                    sender = client.getUser(sender.userId).handle { onSuccess = { it } }?.toSenderInfo()  ?: SenderInfo(),
                     id = msg.id,
                     chatId = msg.chatId,
                 )
