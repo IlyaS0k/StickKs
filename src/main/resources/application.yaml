@@ -37,7 +37,7 @@ tdlib.config:
 
 logging:
   level:
-    flyway: DEBUG
+    flyway: INFO
 
 stickks:
   dsl-dependencies: "src/main/resources/dsl/dependencies"
