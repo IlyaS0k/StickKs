@@ -10,9 +10,7 @@ import ru.ilyasok.StickKs.feature.deepseek.client.DeepseekClient
 @Controller
 @RequestMapping("/test")
 @Profile("!test")
-class TestController(
-    private val deepseekClient: DeepseekClient
-) {
+class TestController() {
 
     @GetMapping()
     suspend fun test(): Unit {

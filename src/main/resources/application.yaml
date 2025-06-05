@@ -23,6 +23,7 @@ spring:
         options:
           model: deepseek-chat
           temperature: 0.8
+      api-key: ${SPRING_AI_DEEPSEEK_API_KEY}
 
 tdlib.config:
   use-message-database: true
